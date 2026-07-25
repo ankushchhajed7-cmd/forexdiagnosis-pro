@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FXD KeyGen (Owner Only)</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Courier New',monospace; background:#0d0d0d; color:#e0e0e0; padding:20px; }
+  .wrap { max-width:420px; margin:20px auto; }
+  h1 { font-size:22px; color:#FFB800; letter-spacing:3px; text-align:center; margin-bottom:4px; }
+  .sub { font-size:11px; color:#FF4444; text-align:center; letter-spacing:2px; margin-bottom:24px; }
+  .box { background:#141414; border:1px solid #2a2a2a; border-radius:10px; padding:20px; margin-bottom:16px; }
+  label { font-size:11px; color:#888; display:block; margin-bottom:8px; letter-spacing:1px; }
+  input { width:100%; padding:12px; background:#0d0d0d; border:1px solid #333; color:#FFB800; border-radius:6px; font-size:18px; text-align:center; letter-spacing:3px; font-family:inherit; text-transform:uppercase; }
+  button { width:100%; padding:14px; margin-top:14px; background:#FFB800; color:#000; border:none; border-radius:6px; font-weight:700; font-size:15px; font-family:inherit; letter-spacing:1px; cursor:pointer; }
+  .result { background:#141414; border:1px solid rgba(0,255,150,0.3); border-radius:10px; padding:20px; text-align:center; display:none; }
+  .keyval { font-size:26px; font-weight:700; color:#00FF96; letter-spacing:4px; margin:10px 0; word-break:break-all; }
+  .copy-btn { background:rgba(0,255,150,0.15); color:#00FF96; border:1px solid rgba(0,255,150,0.4); }
+  .wa-btn { background:linear-gradient(135deg,#25D366,#20BA5C); color:#000; }
+  .note { font-size:10px; color:#666; text-align:center; margin-top:20px; line-height:1.6; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>FXD KEYGEN</h1>
+  <div class="sub">⚠️ OWNER ONLY · KISI KO MAT DENA</div>
+
+  <div class="box">
+    <label>CUSTOMER KA DEVICE ID</label>
+    <input type="text" id="devId" placeholder="XXXX-XXXX" maxlength="9" oninput="autoFormat(this)">
+    <button onclick="gen()">🔑 GENERATE KEY</button>
+  </div>
+
+  <div class="result" id="result">
+    <label>LICENSE KEY (customer ko bhejo)</label>
+    <div class="keyval" id="keyOut">----</div>
+    <button class="copy-btn" onclick="copyKey()">📋 COPY KEY</button>
+    <button class="wa-btn" onclick="waSend()" style="margin-top:10px;">📱 WhatsApp pe bhejo</button>
+  </div>
+
+  <div class="note">
+    Customer app kholega → uska Device ID dikhega → wo tumhe WhatsApp pe bhejega →
+    yahan wo ID daalke key banao → key wapas bhejo.<br><br>
+    Har device ka key alag hota hai. Ek key doosre device pe nahi chalti.
+  </div>
+</div>
+
+<script>
+  const LICENSE_SECRET = 'ANV-FXD-2026-K7X';   // App wale se BILKUL SAME hona chahiye
+
+  function makeKey(deviceId) {
+    const input = deviceId.replace('-','') + LICENSE_SECRET;
+    let h1 = 0x811c9dc5;
+    for (let i=0;i<input.length;i++){ h1^=input.charCodeAt(i); h1=Math.imul(h1,0x01000193); }
+    let h2 = 0x1234567;
+    for (let i=input.length-1;i>=0;i--){ h2^=input.charCodeAt(i); h2=Math.imul(h2,0x85ebca6b); }
+    const p1=(Math.abs(h1)%100000000).toString(36).toUpperCase().padStart(4,'0').slice(0,4);
+    const p2=(Math.abs(h2)%100000000).toString(36).toUpperCase().padStart(4,'0').slice(0,4);
+    const p3=(Math.abs(h1^h2)%100000000).toString(36).toUpperCase().padStart(4,'0').slice(0,4);
+    return (p1+'-'+p2+'-'+p3);
+  }
+
+  function autoFormat(el) {
+    let v = el.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+    if (v.length > 4) v = v.slice(0,4) + '-' + v.slice(4,8);
+    el.value = v;
+  }
+
+  function gen() {
+    const id = (document.getElementById('devId').value||'').trim().toUpperCase();
+    if (!/^[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(id)) {
+      alert('Device ID galat hai. Format: XXXX-XXXX');
+      return;
+    }
+    const key = makeKey(id);
+    document.getElementById('keyOut').textContent = key;
+    document.getElementById('result').style.display = 'block';
+    window._lastKey = key;
+    window._lastId = id;
+  }
+
+  function copyKey() {
+    navigator.clipboard.writeText(window._lastKey).then(()=>alert('✅ Key copy ho gayi!'));
+  }
+
+  function waSend() {
+    const msg = `ForexDiagnosis License Key\nDevice: ${window._lastId}\nKey: ${window._lastKey}\n\nApp me "ENTER LICENSE KEY" me daalo aur ACTIVATE dabao.`;
+    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+  }
+</script>
+</body>
+</html>
