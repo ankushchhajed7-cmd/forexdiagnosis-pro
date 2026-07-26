@@ -1,0 +1,2333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d0d0d">
+    <title>ForexDiagnosis Pro - Licensed</title>
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ForexDiagnosis">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background: #0d0d0d;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 12px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #141414;
+            border-radius: 8px;
+            border: 1px solid #2a2a2a;
+        }
+
+        h1 {
+            font-size: 22px;
+            color: #FF4D9D;
+            letter-spacing: 3px;
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 11px;
+            color: #777;
+            letter-spacing: 1px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .tf-selector {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+
+        .tf-btn {
+            flex: 1;
+            padding: 8px 4px;
+            font-size: 12px;
+            font-weight: 700;
+            background: #141414;
+            color: #777;
+            border: 1px solid #2a2a2a;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Courier New', Courier, monospace;
+            transition: all 0.2s;
+        }
+
+        .tf-btn.active {
+            background: rgba(255, 77, 157, 0.15);
+            color: #FF4D9D;
+            border-color: #FF4D9D;
+        }
+
+        .confluence-table {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin: 14px 0;
+        }
+
+        .confluence-cell {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            background: #141414;
+            border: 1px solid #2a2a2a;
+        }
+
+        .confluence-cell .tf-label {
+            color: #ccc;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .confluence-cell .tf-trend {
+            font-weight: 700;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .confluence-cell.bullish {
+            border-color: rgba(0, 255, 150, 0.3);
+        }
+
+        .confluence-cell.bullish .tf-trend {
+            color: #00FF96;
+        }
+
+        .confluence-cell.bearish {
+            border-color: rgba(255, 68, 68, 0.3);
+        }
+
+        .confluence-cell.bearish .tf-trend {
+            color: #FF4444;
+        }
+
+        input[type="text"], input[type="number"] {
+            flex: 1;
+            padding: 10px 12px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            min-width: 120px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #FF4D9D;
+            color: #000;
+            border: none;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: 'Courier New', Courier, monospace;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.85;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .feature-card {
+            background: #141414;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 12px 6px;
+            text-align: center;
+        }
+
+        .feature-icon {
+            font-size: 18px;
+            margin-bottom: 4px;
+        }
+
+        .feature-name {
+            font-size: 10px;
+            color: #FF4D9D;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .pairs-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .pair-card {
+            background: #141414;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pair-card:hover {
+            border-color: #FF4D9D;
+        }
+
+        .pair-card.selected {
+            border-color: #FF4D9D;
+            background: rgba(255, 77, 157, 0.08);
+        }
+
+        .pair-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #FF4D9D;
+            margin-bottom: 6px;
+            letter-spacing: 1px;
+        }
+
+        .pair-price {
+            font-size: 11px;
+            color: #00FF96;
+            margin-bottom: 4px;
+        }
+
+        .pair-change {
+            font-size: 10px;
+            color: #777;
+        }
+
+        .analysis-panel {
+            background: #0d0d0d;
+            border: none;
+            border-radius: 0;
+            padding: 18px;
+            padding-top: 50px;
+            margin-bottom: 0;
+            display: none;
+        }
+
+        .analysis-panel.active {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            z-index: 1000;
+            animation: slideIn 0.25s ease;
+        }
+
+        .panel-close-btn {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            z-index: 1001;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(230, 57, 140, 0.4);
+            color: #FF4D9D;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .diagnosis-header {
+            text-align: center;
+            margin-bottom: 18px;
+        }
+
+        .diagnosis-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .risk-meter {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .circle-gauge {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 700;
+            position: relative;
+            background: conic-gradient(from 0deg, var(--color) 0deg, var(--color) calc(var(--percent) * 3.6deg), rgba(255,255,255,0.1) calc(var(--percent) * 3.6deg));
+            border: 2px solid var(--color);
+        }
+
+        .gauge-info {
+            flex: 1;
+        }
+
+        .signal-label {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .signal-label.buy {
+            color: #00FF96;
+        }
+
+        .signal-label.sell {
+            color: #FF4444;
+        }
+
+        .signal-label.hold {
+            color: #FF4D9D;
+        }
+
+        .risk-level {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .analysis-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #222;
+            font-size: 13px;
+        }
+
+        .analysis-row:last-child {
+            border-bottom: none;
+        }
+
+        .analysis-label {
+            color: #888;
+        }
+
+        .analysis-value {
+            font-weight: 600;
+            color: #e0e0e0;
+        }
+
+        .analysis-value.bullish {
+            color: #00FF96;
+        }
+
+        .analysis-value.bearish {
+            color: #FF4444;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .action-buttons button {
+            width: 100%;
+            padding: 12px;
+            font-size: 12px;
+        }
+
+        .btn-secondary {
+            background: #141414 !important;
+            color: #00FF96 !important;
+            border: 1px solid rgba(0, 255, 150, 0.4) !important;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 255, 150, 0.25) !important;
+            box-shadow: 0 8px 16px rgba(0, 255, 150, 0.2) !important;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #FF4D9D;
+        }
+
+        .spinner {
+            border: 3px solid rgba(230, 57, 140, 0.2);
+            border-top: 3px solid #FF4D9D;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .free-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #FF4D9D 0%, #E6398C 100%);
+            color: #000;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 700;
+            margin-top: 8px;
+        }
+
+        .whatsapp-btn {
+            background: linear-gradient(135deg, #25D366 0%, #20BA5C 100%) !important;
+            margin-top: 12px;
+            width: 100%;
+        }
+
+        .whatsapp-btn:hover {
+            box-shadow: 0 8px 16px rgba(37, 211, 102, 0.4) !important;
+        }
+
+        .error {
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            color: #FF8888;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 12px;
+        }
+
+        .info-text {
+            font-size: 11px;
+            color: #888;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        @media (max-width: 480px) {
+            .pairs-container {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+
+            .circle-gauge {
+                width: 80px;
+                height: 80px;
+                font-size: 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="licenseGate" style="display:none; position:fixed; inset:0; background:#0d0d0d; z-index:99999; font-family:'Courier New',monospace; padding:20px; overflow-y:auto;">
+        <div style="max-width:420px; margin:40px auto; text-align:center;">
+            <div style="font-size:26px; font-weight:700; color:#FF4D9D; letter-spacing:3px; margin-bottom:6px;">FOREXDIAGNOSIS</div>
+            <div style="font-size:11px; color:#777; letter-spacing:2px; margin-bottom:30px;">LICENSED EDITION</div>
+
+            <div style="background:#141414; border:1px solid #2a2a2a; border-radius:10px; padding:20px; margin-bottom:16px;">
+                <div style="font-size:11px; color:#888; margin-bottom:8px;">YOUR DEVICE ID</div>
+                <div id="deviceIdBox" style="font-size:24px; font-weight:700; color:#00FF96; letter-spacing:4px; margin-bottom:6px;">----</div>
+                <div style="font-size:10px; color:#666;">Ye ID owner ko bhejo, license key milegi</div>
+            </div>
+
+            <button onclick="requestLicense()" style="width:100%; padding:14px; margin-bottom:16px; background:linear-gradient(135deg,#25D366 0%,#20BA5C 100%); color:#000; border:none; border-radius:8px; font-weight:700; font-size:14px; font-family:inherit;">
+                📱 Request License on WhatsApp
+            </button>
+
+            <div style="background:#141414; border:1px solid #2a2a2a; border-radius:10px; padding:20px;">
+                <div style="font-size:11px; color:#888; margin-bottom:10px;">ENTER LICENSE KEY</div>
+                <input type="text" id="licenseInput" placeholder="XXXX-XXXX-XXXX" style="width:100%; padding:12px; background:#0d0d0d; border:1px solid #333; color:#FF4D9D; border-radius:6px; font-size:16px; text-align:center; letter-spacing:2px; font-family:inherit; margin-bottom:12px; box-sizing:border-box;">
+                <button onclick="activateLicense()" style="width:100%; padding:12px; background:#FF4D9D; color:#000; border:none; border-radius:6px; font-weight:700; font-size:14px; font-family:inherit;">
+                    🔓 ACTIVATE
+                </button>
+                <div id="licenseError" style="color:#FF4444; font-size:11px; margin-top:10px; min-height:14px;"></div>
+            </div>
+
+            <div style="font-size:9px; color:#555; margin-top:20px;">© Ankush New Vision · Unauthorized sharing not allowed</div>
+        </div>
+    </div>
+
+    <script>
+        // ===== PRO STORAGE NAMESPACE (personal se 100% alag) =====
+        const PRO_NS = 'FXDPRO_v1_';
+        function pk(key) { return PRO_NS + key; }
+
+        // ===== LICENSE SYSTEM =====
+        const LICENSE_SECRET = 'ANV-FXD-2026-K7X';
+        const OWNER_WHATSAPP = '919765838383';
+
+        function getDeviceId() {
+            let raw = localStorage.getItem(pk('device_fp'));
+            if (!raw) {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                ctx.textBaseline = 'top';
+                ctx.font = '14px Arial';
+                ctx.fillText('FXDiag', 2, 2);
+                const canvasData = canvas.toDataURL();
+                const seed = [
+                    navigator.userAgent,
+                    navigator.language,
+                    screen.width + 'x' + screen.height,
+                    new Date().getTimezoneOffset(),
+                    canvasData.slice(-50)
+                ].join('|');
+                let h = 0;
+                for (let i = 0; i < seed.length; i++) {
+                    h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
+                }
+                raw = Math.abs(h).toString(36).toUpperCase().padStart(8, '0').slice(0, 8);
+                localStorage.setItem(pk('device_fp'), raw);
+            }
+            return raw.slice(0, 4) + '-' + raw.slice(4, 8);
+        }
+
+        function makeKey(deviceId) {
+            const input = deviceId.replace('-', '') + LICENSE_SECRET;
+            let h1 = 0x811c9dc5;
+            for (let i = 0; i < input.length; i++) {
+                h1 ^= input.charCodeAt(i);
+                h1 = Math.imul(h1, 0x01000193);
+            }
+            let h2 = 0x1234567;
+            for (let i = input.length - 1; i >= 0; i--) {
+                h2 ^= input.charCodeAt(i);
+                h2 = Math.imul(h2, 0x85ebca6b);
+            }
+            const p1 = (Math.abs(h1) % 100000000).toString(36).toUpperCase().padStart(4, '0').slice(0, 4);
+            const p2 = (Math.abs(h2) % 100000000).toString(36).toUpperCase().padStart(4, '0').slice(0, 4);
+            const p3 = (Math.abs(h1 ^ h2) % 100000000).toString(36).toUpperCase().padStart(4, '0').slice(0, 4);
+            return (p1 + '-' + p2 + '-' + p3);
+        }
+
+        function requestLicense() {
+            const id = getDeviceId();
+            const msg = `Hi! ForexDiagnosis license chahiye.\nMera Device ID: ${id}`;
+            window.open(`https://wa.me/${OWNER_WHATSAPP}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        function activateLicense() {
+            const id = getDeviceId();
+            const entered = (document.getElementById('licenseInput').value || '').trim().toUpperCase();
+            const errEl = document.getElementById('licenseError');
+            const correct = makeKey(id);
+            if (entered === correct) {
+                localStorage.setItem(pk('fxd_license'), entered);
+                document.getElementById('licenseGate').style.display = 'none';
+                document.body.style.overflow = '';
+            } else {
+                errEl.textContent = '❌ Galat key - owner se sahi key lo';
+            }
+        }
+
+        function checkLicense() {
+            const id = getDeviceId();
+            const saved = localStorage.getItem(pk('fxd_license'));
+            if (saved && saved === makeKey(id)) {
+                return true;
+            }
+            const gate = document.getElementById('licenseGate');
+            document.getElementById('deviceIdBox').textContent = id;
+            gate.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            return false;
+        }
+
+        document.addEventListener('DOMContentLoaded', checkLicense);
+    </script>
+    <div class="container">
+        <header>
+            <h1>🤖 ForexDiagnosis <span style="font-size:13px; background:#FF4D9D; color:#000; padding:2px 8px; border-radius:6px; vertical-align:middle; letter-spacing:1px;">PRO</span></h1>
+            <p class="subtitle">AI-Powered Pair Analysis · Licensed</p>
+            <button id="installBtn" onclick="installApp()" style="display:none; margin-top:10px; background: linear-gradient(135deg, #00FF96 0%, #00CC7A 100%); color:#000;">
+                📲 Install App
+            </button>
+            <button onclick="openSettings()" style="margin-top:10px; background: rgba(255,255,255,0.1); color:#FF4D9D; border:1px solid rgba(230,57,140,0.3);">
+                ⚙️ API Settings
+            </button>
+        </header>
+
+        <div id="newsWarning"></div>
+
+        <div class="controls">
+            <input type="text" id="customPair" placeholder="Enter pair (EURUSD)" maxlength="12">
+            <button onclick="analyzePair()">Analyze</button>
+        </div>
+
+        <div class="tf-selector" style="display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap;">
+            <button class="tf-btn" data-tf="5min" onclick="setTimeframe('5min', this)">5m</button>
+            <button class="tf-btn" data-tf="15min" onclick="setTimeframe('15min', this)">15m</button>
+            <button class="tf-btn" data-tf="30min" onclick="setTimeframe('30min', this)">30m</button>
+            <button class="tf-btn active" data-tf="1h" onclick="setTimeframe('1h', this)">1H</button>
+        </div>
+
+        <div class="analysis-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🤖</div>
+                <div class="feature-name">AI Analysis</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <div class="feature-name">Multi-Timeframe</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🛡️</div>
+                <div class="feature-name">Risk Management</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <div class="feature-name">High Probability</div>
+            </div>
+        </div>
+
+        <div id="pairsContainer" class="pairs-container"></div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin: 20px 0 10px;">
+            <span style="font-size:15px; font-weight:700; color:#FF4D9D; letter-spacing:2px;">MY TRADES</span>
+            <span style="display:flex; gap:6px;">
+                <button onclick="openStatsWindow()" style="padding:6px 12px; font-size:11px; background:rgba(255,77,157,0.15); color:#FF4D9D; border:1px solid rgba(255,77,157,0.4);">📊 Stats</button>
+                <button onclick="checkTradeResults()" style="padding:6px 12px; font-size:11px; background:rgba(0,255,150,0.15); color:#00FF96; border:1px solid rgba(0,255,150,0.4);">🔄 Check Results</button>
+                <button id="livePLBtn" onclick="updateLivePL()" style="padding:6px 12px; font-size:11px; background:rgba(0,204,255,0.15); color:#00CCFF; border:1px solid rgba(0,204,255,0.4);">💰 Live P/L</button>
+            </span>
+        </div>
+        <div id="tradeStats" style="display:none; gap:8px; margin-bottom:10px;"></div>
+        <div id="tradesList"></div>
+
+        <div id="analysisPanel" class="analysis-panel"></div>
+
+        <!-- ===== HELP & DOWNLOADS (Licensed users) ===== -->
+        <div style="margin-top:20px; background:#141414; border:1px solid #2a2a2a; border-radius:12px; padding:16px;">
+            <div style="font-size:15px; font-weight:700; color:#FF4D9D; letter-spacing:1px; margin-bottom:4px;">📥 SETUP &amp; DOWNLOADS</div>
+            <div style="font-size:10px; color:#888; margin-bottom:14px;">Auto-trading setup ke liye EA aur guide download karo</div>
+
+            <a href="https://github.com/ankushchhajed7-cmd/forexdiagnosis-pro/raw/main/FXBridgeEA.ex5" download="FXBridgeEA.ex5" style="display:block; text-decoration:none; margin-bottom:10px;">
+                <div style="background:linear-gradient(135deg,#FF4D9D 0%,#C9327D 100%); color:#000; padding:14px; border-radius:8px; font-weight:700; font-size:13px; text-align:center;">
+                    🤖 Download FXBridge EA (.ex5)
+                </div>
+            </a>
+
+            <a href="https://github.com/ankushchhajed7-cmd/forexdiagnosis-pro/raw/main/ForexDiagnosis-Guide.pdf" download="ForexDiagnosis-Guide.pdf" style="display:block; text-decoration:none; margin-bottom:10px;">
+                <div style="background:#1f1f1f; border:1px solid #FF4D9D66; color:#FF4D9D; padding:14px; border-radius:8px; font-weight:700; font-size:13px; text-align:center;">
+                    📖 Setup Guide PDF (Hindi + English)
+                </div>
+            </a>
+
+            <a href="https://wa.me/919765838383?text=Hi!%20ForexDiagnosis%20setup%20me%20help%20chahiye" target="_blank" style="display:block; text-decoration:none;">
+                <div style="background:linear-gradient(135deg,#25D366 0%,#20BA5C 100%); color:#000; padding:14px; border-radius:8px; font-weight:700; font-size:13px; text-align:center;">
+                    💬 Setup Help chahiye? WhatsApp karo
+                </div>
+            </a>
+
+            <div style="font-size:9px; color:#666; margin-top:12px; line-height:1.6; text-align:center;">
+                EA sirf auto-trading ke liye hai. Sirf signals chahiye to iski zaroorat nahi.<br>
+                Setup me Firebase + VPS/MT5 chahiye - guide PDF me sab steps hain.
+            </div>
+        </div>
+
+        <div id="statsWindow" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#0d0d0d; z-index:1100; overflow-y:auto; font-family:'Courier New', monospace; padding:16px; padding-top:54px;"></div>
+        <div id="chartWindow" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#0a0e27; z-index:1200; flex-direction:column;"></div>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importTrades(event)">
+
+        <div class="info-text">
+            API by TwelveData | Markets Live
+        </div>
+    </div>
+
+    <script>
+        const API_KEY = 'demo'; // Use your TwelveData API key
+        const DEFAULT_PAIRS = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'XAUUSD', 'NZDUSD', 'BTCUSD', 'ETHUSD'];
+
+        // Crypto pairs - inke liye decimals aur SL alag honge
+        const CRYPTO_PAIRS = ['BTCUSD', 'ETHUSD', 'BNBUSD', 'SOLUSD', 'XRPUSD', 'ADAUSD', 'DOGEUSD', 'LTCUSD'];
+        function isCrypto(pair) {
+            return CRYPTO_PAIRS.includes(pair.toUpperCase());
+        }
+        let selectedPair = null;
+        const analysisCache = {}; // { 'PAIR_interval': { analysis, confluence, timestamp } }
+        let selectedInterval = '1h';
+
+
+        function closeAnalysisPanel() {
+            const panel = document.getElementById('analysisPanel');
+            panel.classList.remove('active');
+            panel.innerHTML = '';
+        }
+
+        function setTimeframe(tf, btn) {
+            selectedInterval = tf;
+            document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+        let pairsData = {};
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderPairCards();
+            loadCachedData();
+            renderTrades();
+            renderNewsWarning();
+        });
+
+        // ===== High-Impact News Warning (IST) =====
+        function renderNewsWarning() {
+            const div = document.getElementById('newsWarning');
+            if (!div) return;
+
+            const now = new Date();
+            const warnings = [];
+
+            // NFP: First Friday of every month, ~6:00 PM IST
+            const firstFriday = (() => {
+                const d = new Date(now.getFullYear(), now.getMonth(), 1);
+                while (d.getDay() !== 5) d.setDate(d.getDate() + 1);
+                return d.getDate();
+            })();
+            if (now.getDay() === 5 && now.getDate() === firstFriday) {
+                warnings.push('📊 <b>NFP Aaj!</b> US Non-Farm Payrolls ~6:00 PM IST - USD pairs aur Gold me bada move aa sakta hai');
+            }
+
+            // FOMC 2026 decision days (announcement ~11:30 PM IST)
+            const fomcDates = ['2026-01-28', '2026-03-18', '2026-04-29', '2026-06-17', '2026-07-29', '2026-09-16', '2026-10-28', '2026-12-09'];
+            const todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+            if (fomcDates.includes(todayStr)) {
+                warnings.push('🏦 <b>FOMC Aaj!</b> Fed rate decision ~11:30 PM IST - extreme volatility expected, naye trades avoid karo');
+            }
+            // FOMC kal hai? (day-before warning)
+            const tomorrow = new Date(now.getTime() + 86400000);
+            const tomStr = tomorrow.getFullYear() + '-' + String(tomorrow.getMonth() + 1).padStart(2, '0') + '-' + String(tomorrow.getDate()).padStart(2, '0');
+            if (fomcDates.includes(tomStr)) {
+                warnings.push('🏦 <b>FOMC Kal!</b> Fed decision kal raat - overnight positions careful rakho');
+            }
+
+            if (warnings.length === 0) {
+                div.innerHTML = '';
+                return;
+            }
+
+            div.innerHTML = warnings.map(w => `
+                <div style="background:rgba(255,68,68,0.1); border:1px solid rgba(255,68,68,0.4); border-radius:10px; padding:12px 14px; margin-bottom:12px; font-size:12px; color:#FFB3D9; line-height:1.5;">
+                    ⚠️ ${w}
+                </div>
+            `).join('');
+        }
+
+        function renderPairCards() {
+            const container = document.getElementById('pairsContainer');
+            container.innerHTML = DEFAULT_PAIRS.map(pair => `
+                <div class="pair-card" onclick="selectAndAnalyze('${pair}')">
+                    <div class="pair-name">${pair}</div>
+                    <div class="pair-price" id="price-${pair}">Loading...</div>
+                    <div class="pair-change" id="change-${pair}">--</div>
+                </div>
+            `).join('');
+        }
+
+        async function selectAndAnalyze(pair) {
+            selectedPair = pair;
+            document.querySelectorAll('.pair-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            event?.target?.closest('.pair-card')?.classList.add('selected');
+            
+            await analyzePair(pair);
+        }
+
+        async function analyzePair(customPair = null, forceRefresh = false) {
+            const rawPair = customPair || document.getElementById('customPair')?.value || selectedPair;
+            const pair = rawPair ? rawPair.trim().toUpperCase().replace(/[^A-Z]/g, '') : null;
+            if (!pair) return alert('Select or enter a pair');
+            if (pair.length !== 6) return alert('Pair 6 letters ka hona chahiye, jaise EURUSD ya XAUUSD');
+
+            const apiKey = localStorage.getItem(pk('td_api_key'));
+            if (!apiKey) {
+                openSettings();
+                return;
+            }
+
+            const panel = document.getElementById('analysisPanel');
+
+            // Check cache first (5 min validity) unless user explicitly hit Refresh
+            const cacheKey = `${pair}_${selectedInterval}`;
+            const cached = analysisCache[cacheKey];
+            const cacheAge = cached ? Date.now() - cached.timestamp : Infinity;
+            if (!forceRefresh && cached && cacheAge < 5 * 60 * 1000) {
+                displayAnalysis(pair, cached.analysis, cached.confluence, cached.timestamp, true);
+                return;
+            }
+
+            panel.innerHTML = '<button class="panel-close-btn" onclick="closeAnalysisPanel()">✕</button><div class="loading"><div class="spinner"></div>Analyzing ' + pair + ' (live, ' + selectedInterval + ')...</div>';
+            panel.classList.add('active');
+
+            try {
+                const symbol = toTDSymbol(pair.toUpperCase());
+                const quote = await tdFetch('quote', symbol, apiKey, selectedInterval);
+                const livePrice = parseFloat(quote.close);
+
+                const [analysis, confluence] = await Promise.all([
+                    fetchLiveAnalysis(pair.toUpperCase(), apiKey, selectedInterval, livePrice),
+                    getMultiTimeframeConfluence(pair.toUpperCase(), apiKey, livePrice)
+                ]);
+
+                const timestamp = Date.now();
+                analysisCache[cacheKey] = { analysis, confluence, timestamp };
+                displayAnalysis(pair.toUpperCase(), analysis, confluence, timestamp, false);
+            } catch (error) {
+                panel.innerHTML = `<div class="error">❌ ${error.message}</div>`;
+            }
+        }
+
+        function toTDSymbol(pair) {
+            // EURUSD -> EUR/USD, XAUUSD -> XAU/USD
+            return pair.slice(0, 3) + '/' + pair.slice(3);
+        }
+
+        // Rate limiter: TwelveData free tier allows 8 calls/minute.
+        // We cap at 7 to leave a safety buffer and auto-queue/wait instead of erroring out.
+        const callTimestamps = [];
+        const MAX_CALLS_PER_MINUTE = 7;
+
+        async function waitForRateSlot() {
+            while (true) {
+                const now = Date.now();
+                while (callTimestamps.length && now - callTimestamps[0] > 60000) {
+                    callTimestamps.shift();
+                }
+                if (callTimestamps.length < MAX_CALLS_PER_MINUTE) {
+                    callTimestamps.push(Date.now());
+                    return;
+                }
+                const waitTime = 60000 - (now - callTimestamps[0]) + 300;
+                updateLoadingMessage(`Free API limit hit - waiting ${Math.ceil(waitTime / 1000)}s...`);
+                await new Promise(r => setTimeout(r, waitTime));
+            }
+        }
+
+        function updateLoadingMessage(msg) {
+            const loadingDiv = document.querySelector('.loading');
+            if (loadingDiv && loadingDiv.lastChild) {
+                loadingDiv.lastChild.textContent = msg;
+            }
+        }
+
+        async function tdFetch(endpoint, symbol, apiKey, interval, extra = '') {
+            await waitForRateSlot();
+            const url = `https://api.twelvedata.com/${endpoint}?symbol=${encodeURIComponent(symbol)}&interval=${interval}&apikey=${apiKey}${extra}`;
+            const res = await fetch(url);
+            const data = await res.json();
+            if (data.status === 'error' || data.code) {
+                throw new Error(data.message || 'API error - check your key or rate limit');
+            }
+            return data;
+        }
+
+        async function fetchLiveAnalysis(pair, apiKey, interval, livePrice) {
+            const symbol = toTDSymbol(pair);
+            const decimals = pair === 'XAUUSD' ? 2 : (pair === 'USDJPY' ? 3 : (isCrypto(pair) ? 2 : 5));
+
+            const [rsiData, macdData, supertrendData, atrData] = await Promise.all([
+                tdFetch('rsi', symbol, apiKey, interval, '&time_period=14'),
+                tdFetch('macd', symbol, apiKey, interval),
+                tdFetch('supertrend', symbol, apiKey, interval, '&period=10&multiplier=3'),
+                tdFetch('atr', symbol, apiKey, interval, '&time_period=14')
+            ]);
+
+            const price = livePrice;
+            const rsi = parseFloat(rsiData.values?.[0]?.rsi || 50);
+            const rsiSignal = rsi > 70 ? 'OVERBOUGHT' : rsi < 30 ? 'OVERSOLD' : 'NEUTRAL';
+
+            const macdLine = parseFloat(macdData.values?.[0]?.macd || 0);
+            const macdSig = parseFloat(macdData.values?.[0]?.macd_signal || 0);
+            const macdBullish = macdLine > macdSig;
+            const macdSignal = macdBullish ? 'BULLISH CROSS' : 'BEARISH CROSS';
+
+            // Compare CURRENT live price against the Supertrend line value - this is the
+            // standard way to read Supertrend and stays valid until the line itself flips.
+            const stValue = parseFloat(supertrendData.values?.[0]?.supertrend || price);
+            const supertrend = price > stValue ? 'BULLISH' : 'BEARISH';
+
+            const atr = parseFloat(atrData.values?.[0]?.atr || price * 0.005);
+
+            // Signal from real indicator confluence
+            let signal = 'HOLD';
+            if (supertrend === 'BULLISH' && macdBullish) signal = 'BUY';
+            else if (supertrend === 'BEARISH' && !macdBullish) signal = 'SELL';
+
+            const confluenceCount = (supertrend === 'BULLISH' ? 1 : 0) + (macdBullish ? 1 : 0) + (rsiSignal === 'NEUTRAL' ? 1 : 0);
+            const confidence = 50 + confluenceCount * 15;
+            const riskScore = rsiSignal !== 'NEUTRAL' ? 70 : (signal === 'HOLD' ? 55 : 35);
+            const rrr = '2.0';
+
+            // Entry zones - mode (MARKET/LIMIT) aur SL multiplier ke hisaab se
+            const zones = calcZones(signal, price, atr, parseFloat(rrr), pair);
+
+            return {
+                signal,
+                pair,
+                orderType: zones.orderType,
+                currentPrice: price.toFixed(decimals),
+                rawPrice: price,
+                rawAtr: atr,
+                decimals: decimals,
+                riskScore,
+                confidence,
+                supertrend,
+                rsi,
+                rsiSignal,
+                macd: macdSignal,
+                atrHigh: atr,
+                rrr,
+                entryZone: zones.entry !== null ? zones.entry.toFixed(decimals) : null,
+                slZone: zones.sl !== null ? zones.sl.toFixed(decimals) : null,
+                tpZone: zones.tp !== null ? zones.tp.toFixed(decimals) : null
+            };
+        }
+
+        // Pair-wise SL multiplier - XAUUSD 1.5, crypto 2.0, baaki pairs 2.5
+        function getSLMultKey(pair) {
+            if (pair === 'XAUUSD') return pk('sl_mult_gold');
+            if (isCrypto(pair)) return pk('sl_mult_crypto');
+            return pk('sl_mult_forex');
+        }
+
+        // Signal Quality Score (0-100) - kitna solid setup hai
+        function computeQuality(analysis, confluence) {
+            if (analysis.signal === 'HOLD') {
+                return { score: 0, grade: 'NO TRADE', color: '#888', reasons: [] };
+            }
+
+            let score = 0;
+            const reasons = [];
+            const isBuy = analysis.signal === 'BUY';
+
+            // 1. Supertrend + MACD agree → 30 pts (signal ka core)
+            const macdBull = analysis.macd === 'BULLISH CROSS';
+            const stMacdAgree = (isBuy && analysis.supertrend === 'BULLISH' && macdBull) ||
+                                (!isBuy && analysis.supertrend === 'BEARISH' && !macdBull);
+            if (stMacdAgree) { score += 30; reasons.push('✓ Supertrend + MACD agree'); }
+            else reasons.push('✗ Supertrend/MACD conflict');
+
+            // 2. Multi-TF confluence → 30 pts (sab timeframes ek direction)
+            const bull = confluence.filter(c => c.trend === 'BULLISH').length;
+            const bear = confluence.filter(c => c.trend === 'BEARISH').length;
+            const total = confluence.length || 1;
+            const aligned = isBuy ? bull : bear;
+            const confPct = aligned / total;
+            if (confPct === 1) { score += 30; reasons.push(`✓ All ${total} timeframes aligned`); }
+            else if (confPct >= 0.75) { score += 20; reasons.push(`✓ ${aligned}/${total} timeframes aligned`); }
+            else if (confPct >= 0.5) { score += 10; reasons.push(`~ ${aligned}/${total} timeframes (mixed)`); }
+            else reasons.push(`✗ Only ${aligned}/${total} timeframes agree`);
+
+            // 3. RSI healthy zone → 20 pts (extremes pe reversal risk)
+            const rsi = analysis.rsi;
+            if (rsi >= 40 && rsi <= 60) { score += 20; reasons.push('✓ RSI neutral zone (safe)'); }
+            else if (rsi > 30 && rsi < 70) { score += 12; reasons.push('~ RSI ok'); }
+            else reasons.push('✗ RSI extreme (reversal risk)');
+
+            // 4. RSI momentum matches signal → 10 pts
+            const rsiMatchesBuy = isBuy && rsi >= 50;
+            const rsiMatchesSell = !isBuy && rsi <= 50;
+            if (rsiMatchesBuy || rsiMatchesSell) { score += 10; reasons.push('✓ RSI momentum matches'); }
+            else reasons.push('✗ RSI momentum against signal');
+
+            // 5. ATR healthy (not dead, not chaos) → 10 pts
+            const atrPct = analysis.rawAtr / analysis.rawPrice;
+            const atrMax = isCrypto(analysis.pair) ? 0.04 : 0.015;  // crypto zyada volatile hota hai
+            if (atrPct >= 0.0005 && atrPct <= atrMax) { score += 10; reasons.push('✓ Volatility healthy'); }
+            else if (atrPct < 0.0005) reasons.push('✗ Too quiet (weak moves)');
+            else reasons.push('✗ Too volatile (risky)');
+
+            let grade, color;
+            if (score >= 80) { grade = 'STRONG'; color = '#00FF96'; }
+            else if (score >= 50) { grade = 'MODERATE'; color = '#FF4D9D'; }
+            else { grade = 'WEAK'; color = '#FF4444'; }
+
+            return { score, grade, color, reasons };
+        }
+
+        function getSLMult(pair) {
+            const saved = localStorage.getItem(getSLMultKey(pair));
+            if (saved !== null) return parseFloat(saved);
+            if (pair === 'XAUUSD') return 1.5;
+            if (isCrypto(pair)) return 2.0;
+            return 2.5;
+        }
+
+        // Entry/SL/TP calculator - MARKET ya LIMIT mode, pair-wise SL multiplier
+        function calcZones(signal, price, atr, rrr, pair) {
+            const slMult = getSLMult(pair);
+            const isLimit = (localStorage.getItem(pk('entry_mode')) || 'LIMIT') === 'LIMIT';
+            const pullback = isLimit ? atr * 0.5 : 0;
+
+            let entry = null, sl = null, tp = null, orderType = null;
+            if (signal === 'SELL') {
+                orderType = isLimit ? 'SELL LIMIT' : 'SELL MARKET';
+                entry = price + pullback;
+                sl = entry + atr * slMult;
+                tp = entry - atr * slMult * rrr;
+            } else if (signal === 'BUY') {
+                orderType = isLimit ? 'BUY LIMIT' : 'BUY MARKET';
+                entry = price - pullback;
+                sl = entry - atr * slMult;
+                tp = entry + atr * slMult * rrr;
+            }
+            return { entry, sl, tp, orderType };
+        }
+
+        async function getMultiTimeframeConfluence(pair, apiKey, livePrice) {
+            const symbol = toTDSymbol(pair);
+            const timeframes = [
+                { tf: '5min', label: '5 Minute' },
+                { tf: '15min', label: '15 Minute' },
+                { tf: '30min', label: '30 Minute' },
+                { tf: '1h', label: '1 Hour' }
+            ];
+
+            const results = await Promise.all(
+                timeframes.map(async ({ tf, label }) => {
+                    for (let attempt = 0; attempt < 2; attempt++) {
+                        try {
+                            const data = await tdFetch('supertrend', symbol, apiKey, tf, '&period=10&multiplier=3');
+                            const st = parseFloat(data.values?.[0]?.supertrend);
+                            if (isNaN(st)) throw new Error('No data');
+                            const trend = livePrice > st ? 'BULLISH' : 'BEARISH';
+                            return { label, trend };
+                        } catch (e) {
+                            if (attempt === 1) return { label, trend: 'N/A' };
+                            await new Promise(r => setTimeout(r, 1500));
+                        }
+                    }
+                })
+            );
+
+            return results;
+        }
+
+        function openSettings() {
+            const existing = localStorage.getItem(pk('td_api_key')) || '';
+            const key = prompt('1/2 — TwelveData API Key:', existing);
+            if (key !== null && key.trim() !== '') {
+                localStorage.setItem(pk('td_api_key'), key.trim());
+            }
+
+            const existingFB = localStorage.getItem(pk('fb_url')) || '';
+            const fb = prompt('2/2 — Firebase URL (MT5 bridge ke liye, khali chhod sakte ho):\n\nExample:\nhttps://myapp-default-rtdb.firebaseio.com', existingFB);
+            if (fb !== null) {
+                localStorage.setItem(pk('fb_url'), fb.trim().replace(/\/$/, ''));
+            }
+
+            alert('✅ Settings saved!');
+        }
+
+        // ===== MT5 Bridge via Firebase Realtime DB =====
+        async function sendToMT5() {
+            if (window._sendingOrder) { alert('Order bhej raha hai, ruko...'); return; }
+            const a = window.lastAnalysis;
+            if (!a || a.signal === 'HOLD') return alert('HOLD signal pe order nahi bhej sakte');
+
+            const fbUrl = localStorage.getItem(pk('fb_url'));
+            if (!fbUrl) {
+                alert('Pehle ⚙️ API Settings me Firebase URL daalo');
+                return openSettings();
+            }
+
+            const entry = parseFloat(document.getElementById('editEntry')?.value);
+            const sl = parseFloat(document.getElementById('editSL')?.value);
+            const tp = parseFloat(document.getElementById('editTP')?.value);
+            const lots = parseFloat(document.getElementById('editLots')?.value);
+            if ([entry, sl, tp, lots].some(isNaN)) return alert('Values check karo - koi field khali ya galat hai');
+
+            // Direction validation
+            if (a.signal === 'BUY') {
+                if (sl >= entry) return alert('❌ BUY me SL entry se NEECHE hona chahiye');
+                if (tp <= entry) return alert('❌ BUY me TP entry se UPAR hona chahiye');
+            } else {
+                if (sl <= entry) return alert('❌ SELL me SL entry se UPAR hona chahiye');
+                if (tp >= entry) return alert('❌ SELL me TP entry se NEECHE hona chahiye');
+            }
+
+            const mode = localStorage.getItem(pk('entry_mode')) || 'LIMIT';
+            const isMarketMode = (mode === 'MARKET');
+            let orderType;
+            if (isMarketMode) {
+                orderType = a.signal === 'BUY' ? 'BUYMARKET' : 'SELLMARKET';
+            } else {
+                orderType = a.signal === 'BUY' ? 'BUYLIMIT' : 'SELLLIMIT';
+            }
+            const orderId = Date.now();
+            const order = {
+                id: orderId,
+                pair: a.pair,
+                type: orderType,
+                lots: lots,
+                entry: entry,
+                sl: sl,
+                tp: tp
+            };
+
+            if (!confirm(`MT5 pe ye order bhejna hai?\n\n${a.pair} ${orderType}\nLots: ${lots}\nEntry: ${entry}\nSL: ${sl}\nTP: ${tp}`)) return;
+
+            window._sendingOrder = true;
+            try {
+                const res = await fetch(`${fbUrl}/fxbridge/order.json`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(order)
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                await res.json();
+                alert('✅ Order cloud pe bhej diya!\nVPS ka EA ~10 sec me place karega.\n\nID: ' + orderId);
+            } catch (e) {
+                alert('❌ Bhejne me problem: ' + e.message + '\n\nFirebase URL aur rules check karo.');
+            } finally {
+                setTimeout(() => { window._sendingOrder = false; }, 3000);
+            }
+        }
+
+        function displayAnalysis(pair, analysis, confluence = [], timestamp = null, fromCache = false) {
+            const panel = document.getElementById('analysisPanel');
+
+            const signalColors = {
+                'BUY': 'rgba(0, 255, 150, 0.8)',
+                'SELL': 'rgba(255, 68, 68, 0.8)',
+                'HOLD': 'rgba(255, 77, 157, 0.8)'
+            };
+            const gaugeColor = signalColors[analysis.signal] || signalColors['HOLD'];
+            const riskText = analysis.riskScore < 40 ? 'Low Risk' : analysis.riskScore < 70 ? 'Medium Risk' : 'High Risk';
+
+            // Signal quality score
+            const q = computeQuality(analysis, confluence);
+            window.lastQuality = q;
+            const qualityHTML = analysis.signal === 'HOLD' ? '' : `
+                <div style="background:${q.color}15; border:1px solid ${q.color}66; border-radius:10px; padding:12px 14px; margin-bottom:14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <span style="font-size:12px; color:#888; letter-spacing:1px;">SIGNAL QUALITY</span>
+                        <span style="font-size:16px; font-weight:700; color:${q.color};">${q.grade} · ${q.score}/100</span>
+                    </div>
+                    <div style="height:6px; background:#222; border-radius:3px; overflow:hidden; margin-bottom:8px;">
+                        <div style="height:100%; width:${q.score}%; background:${q.color};"></div>
+                    </div>
+                    <div style="font-size:10px; color:#999; line-height:1.7;">
+                        ${q.reasons.map(r => `<div>${r}</div>`).join('')}
+                    </div>
+                    ${q.grade === 'STRONG' ? '<div style="text-align:center; margin-top:8px; font-size:11px; color:#00FF96; font-weight:700;">✅ HIGH PROBABILITY SETUP</div>' :
+                      q.grade === 'WEAK' ? '<div style="text-align:center; margin-top:8px; font-size:11px; color:#FF4444; font-weight:700;">⚠️ WEAK - SKIP KARNA BEHTAR</div>' :
+                      '<div style="text-align:center; margin-top:8px; font-size:11px; color:#FF4D9D; font-weight:700;">🟡 MODERATE - EXTRA CONFIRMATION LO</div>'}
+                </div>
+            `;
+
+            const bullishCount = confluence.filter(c => c.trend === 'BULLISH').length;
+            const bearishCount = confluence.filter(c => c.trend === 'BEARISH').length;
+            const totalCount = confluence.length;
+            const confluenceSummary = bullishCount > bearishCount
+                ? `${bullishCount}/${totalCount} Bullish`
+                : bearishCount > bullishCount
+                    ? `${bearishCount}/${totalCount} Bearish`
+                    : 'Mixed';
+
+            const confluenceHTML = confluence.length ? `
+                <div class="confluence-table">
+                    ${confluence.map(c => `
+                        <div class="confluence-cell ${c.trend === 'BULLISH' ? 'bullish' : c.trend === 'BEARISH' ? 'bearish' : ''}">
+                            <span class="tf-label">${c.label}</span>
+                            <span class="tf-trend">${c.trend === 'BULLISH' ? '▲ BULLISH' : c.trend === 'BEARISH' ? '▼ BEARISH' : '— N/A'}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : '';
+
+            const now = timestamp ? new Date(timestamp) : new Date();
+            const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+            const cacheLabel = fromCache ? ' <span style="color:#888;">(cached)</span>' : '';
+
+            // Rebuild the ENTIRE panel HTML fresh every time (panel gets wiped during loading state)
+            panel.innerHTML = `
+                <button class="panel-close-btn" onclick="closeAnalysisPanel()">✕</button>
+                <div style="text-align:center; font-size:11px; color:#888; margin-bottom:10px;">
+                    🕐 Last Updated: ${timeStr}${cacheLabel}
+                    <button onclick="analyzePair('${pair}', true)" style="margin-left:10px; padding:3px 10px; font-size:10px; background:rgba(255,77,157,0.15); color:#FF4D9D; border:1px solid rgba(230,57,140,0.4); border-radius:12px;">🔄 Refresh</button>
+                </div>
+                <div class="diagnosis-header">
+                    <div class="diagnosis-title">${pair}</div>
+                    <div class="risk-meter">
+                        <div class="circle-gauge" style="--percent: ${analysis.riskScore}; --color: ${gaugeColor};">
+                            <span>${analysis.riskScore}</span>
+                        </div>
+                        <div class="gauge-info">
+                            <div class="signal-label ${analysis.signal.toLowerCase()}">${analysis.signal}</div>
+                            <div class="risk-level">${riskText} • RRR ${analysis.rrr}:1 • ${analysis.confidence}% Confidence</div>
+                        </div>
+                    </div>
+                </div>
+
+                ${qualityHTML}
+
+                <div style="text-align:center; font-size:11px; color:#888; margin-bottom:6px;">MULTI-TIMEFRAME TREND</div>
+                ${confluenceHTML}
+
+                <div id="analysisContent">
+                    <div class="analysis-row">
+                        <span class="analysis-label">Supertrend (${selectedInterval.toUpperCase()})</span>
+                        <span class="analysis-value ${analysis.supertrend === 'BULLISH' ? 'bullish' : 'bearish'}">${analysis.supertrend}</span>
+                    </div>
+                    <div class="analysis-row">
+                        <span class="analysis-label">RSI (14)</span>
+                        <span class="analysis-value">${analysis.rsi.toFixed(0)} - ${analysis.rsiSignal}</span>
+                    </div>
+                    <div class="analysis-row">
+                        <span class="analysis-label">MACD Signal</span>
+                        <span class="analysis-value">${analysis.macd}</span>
+                    </div>
+                    <div class="analysis-row">
+                        <span class="analysis-label">ATR High</span>
+                        <span class="analysis-value">${analysis.atrHigh < 1 ? analysis.atrHigh.toFixed(5) : analysis.atrHigh.toFixed(2)}</span>
+                    </div>
+                    <div class="analysis-row" style="border-bottom: 2px solid rgba(230, 57, 140, 0.2); margin-bottom: 12px;">
+                        <span class="analysis-label">Confluence</span>
+                        <span class="analysis-value">${bullishCount > bearishCount ? '↗️' : bearishCount > bullishCount ? '↘️' : '↔️'} ${confluenceSummary}</span>
+                    </div>
+                    ${analysis.signal === 'HOLD' ? `
+                    <div style="text-align:center; padding:16px; background:rgba(255,77,157,0.08); border:1px solid rgba(255,77,157,0.25); border-radius:10px; margin-top:4px;">
+                        <div style="font-size:14px; color:#FF4D9D; font-weight:600; margin-bottom:4px;">⏳ No Trade Zone</div>
+                        <div style="font-size:11px; color:#888;">Indicators disagree kar rahe hain (Supertrend vs MACD). Clear BUY/SELL signal ka wait karo - tab Entry/SL/TP milega.</div>
+                    </div>
+                    ` : `
+                    <div style="display:flex; gap:6px; margin:10px 0;">
+                        <button onclick="setEntryMode('MARKET')" id="btnMarket" style="flex:1; padding:9px; font-size:11px; font-weight:700; border-radius:6px; font-family:inherit;">⚡ MARKET</button>
+                        <button onclick="setEntryMode('LIMIT')" id="btnLimit" style="flex:1; padding:9px; font-size:11px; font-weight:700; border-radius:6px; font-family:inherit;">⏳ LIMIT</button>
+                    </div>
+                    <div style="text-align:center; margin-bottom:8px;">
+                        <span style="display:inline-block; padding:6px 16px; background:${analysis.signal === 'BUY' ? 'rgba(0,255,150,0.15)' : 'rgba(255,68,68,0.15)'}; border:1px solid ${analysis.signal === 'BUY' ? 'rgba(0,255,150,0.5)' : 'rgba(255,68,68,0.5)'}; border-radius:20px; font-weight:700; font-size:13px; color:${analysis.signal === 'BUY' ? '#00FF96' : '#FF4444'};" id="orderTypeBadge">
+                            📋 ${analysis.orderType}
+                        </span>
+                    </div>
+                    <div class="analysis-row">
+                        <span class="analysis-label">💹 Current Price</span>
+                        <span class="analysis-value">${analysis.currentPrice}</span>
+                    </div>
+                    <div class="analysis-row">
+                        <span class="analysis-label">📏 SL Width (× ATR) ✏️<br><span style="font-size:9px; color:#666;">${pair === 'XAUUSD' ? 'Gold setting' : 'Forex setting (sab pairs)'}</span></span>
+                        <input type="number" step="0.1" min="0.5" id="editSLMult" value="${getSLMult(pair)}" oninput="changeSLMult()" style="width:110px; padding:6px 8px; background:rgba(255,255,255,0.06); border:1px solid #333; color:#e0e0e0; border-radius:6px; font-size:13px; font-weight:600; text-align:right; font-family:inherit;">
+                    </div>
+                    <div class="analysis-row">
+                        <span class="analysis-label">💼 Lot Size ✏️</span>
+                        <input type="number" step="0.01" min="0.01" id="editLots" value="${isCrypto(pair) ? '0.10' : '0.01'}" oninput="updateDollarValues()" style="width:110px; padding:6px 8px; background:rgba(255,255,255,0.06); border:1px solid #333; color:#e0e0e0; border-radius:6px; font-size:13px; font-weight:600; text-align:right; font-family:inherit;">
+                    </div>
+                    <div class="analysis-row">
+                        <span class="analysis-label">📍 Entry ✏️</span>
+                        <input type="number" step="any" id="editEntry" value="${analysis.entryZone}" oninput="updateDollarValues()" style="width:110px; padding:6px 8px; background:rgba(255,77,157,0.1); border:1px solid rgba(255,77,157,0.4); color:#FF4D9D; border-radius:6px; font-size:13px; font-weight:600; text-align:right; font-family:inherit;">
+                    </div>
+                    <div class="analysis-row">
+                        <span class="analysis-label">🛑 SL ✏️ <span id="slDollar" style="color:#FF4444; font-size:11px; font-weight:700;"></span></span>
+                        <input type="number" step="any" id="editSL" value="${analysis.slZone}" oninput="updateDollarValues()" style="width:110px; padding:6px 8px; background:rgba(255,68,68,0.1); border:1px solid rgba(255,68,68,0.4); color:#FF8888; border-radius:6px; font-size:13px; font-weight:600; text-align:right; font-family:inherit;">
+                    </div>
+                    <div class="analysis-row">
+                        <span class="analysis-label">🎯 TP ✏️ <span id="tpDollar" style="color:#00FF96; font-size:11px; font-weight:700;"></span></span>
+                        <input type="number" step="any" id="editTP" value="${analysis.tpZone}" oninput="updateDollarValues()" style="width:110px; padding:6px 8px; background:rgba(0,255,150,0.1); border:1px solid rgba(0,255,150,0.4); color:#00FF96; border-radius:6px; font-size:13px; font-weight:600; text-align:right; font-family:inherit;">
+                    </div>
+                    <div id="pipInfo" style="font-size:10px; color:#666; text-align:center; margin-top:6px;"></div>
+                    <button onclick="refreshZones()" style="width:100%; margin-top:8px; padding:8px; font-size:11px; background:#141414; color:#888; border:1px solid #2a2a2a; border-radius:6px; font-family:inherit;">↻ RESET TO CALCULATED VALUES</button>
+                    `}
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn-secondary" onclick="openChart('${pair}')">📈 Chart</button>
+                    <button class="btn-secondary" onclick="shareWhatsApp()">📤 Share</button>
+                    <button class="btn-secondary" onclick="copySignal()">📋 Copy</button>
+                    <button class="btn-secondary" onclick="savAnalysis()">💾 Save</button>
+                </div>
+                ${analysis.signal !== 'HOLD' ? `
+                <button onclick="sendToMT5()" style="width:100%; margin-top:10px; padding:14px; background: linear-gradient(135deg, #0088cc 0%, #005f8f 100%); color:#fff; font-weight:700; font-size:14px;">
+                    🚀 Send Order to MT5
+                </button>
+                <button onclick="recordTrade()" style="width:100%; margin-top:8px; padding:14px; background: linear-gradient(135deg, #00FF96 0%, #00CC7A 100%); color:#000; font-weight:700; font-size:14px;">
+                    ✅ Maine Ye Trade Liya
+                </button>
+                ` : ''}
+
+                <div class="free-badge">✨ INSTANT ANALYSIS</div>
+            `;
+
+            panel.classList.add('active');
+
+            // Store for sharing
+            window.lastAnalysis = { pair, ...analysis };
+            highlightModeButtons();
+            updateDollarValues();
+        }
+
+        // Entry mode toggle - MARKET vs LIMIT
+        function setEntryMode(mode) {
+            localStorage.setItem(pk('entry_mode'), mode);
+            refreshZones();
+        }
+
+        function changeSLMult() {
+            const a = window.lastAnalysis;
+            if (!a) return;
+            const v = parseFloat(document.getElementById('editSLMult')?.value);
+            if (!isNaN(v) && v > 0) {
+                localStorage.setItem(getSLMultKey(a.pair), v);
+                refreshZones();
+            }
+        }
+
+        // Mode/multiplier change pe Entry/SL/TP dobara calculate (bina naya API call)
+        function refreshZones() {
+            const a = window.lastAnalysis;
+            if (!a || a.signal === 'HOLD') return;
+
+            const z = calcZones(a.signal, a.rawPrice, a.rawAtr, parseFloat(a.rrr), a.pair);
+            const d = a.decimals;
+            const eIn = document.getElementById('editEntry');
+            const sIn = document.getElementById('editSL');
+            const tIn = document.getElementById('editTP');
+            if (eIn) eIn.value = z.entry.toFixed(d);
+            if (sIn) sIn.value = z.sl.toFixed(d);
+            if (tIn) tIn.value = z.tp.toFixed(d);
+
+            a.orderType = z.orderType;
+            const badge = document.getElementById('orderTypeBadge');
+            if (badge) badge.textContent = '📋 ' + z.orderType;
+
+            highlightModeButtons();
+            updateDollarValues();
+        }
+
+        function highlightModeButtons() {
+            const mode = localStorage.getItem(pk('entry_mode')) || 'LIMIT';
+            const bm = document.getElementById('btnMarket');
+            const bl = document.getElementById('btnLimit');
+            if (!bm || !bl) return;
+            const on = 'background:rgba(255,77,157,0.2); color:#FF4D9D; border:1px solid #FF4D9D;';
+            const off = 'background:#141414; color:#777; border:1px solid #2a2a2a;';
+            bm.style.cssText = 'flex:1; padding:9px; font-size:11px; font-weight:700; border-radius:6px; font-family:inherit;' + (mode === 'MARKET' ? on : off);
+            bl.style.cssText = 'flex:1; padding:9px; font-size:11px; font-weight:700; border-radius:6px; font-family:inherit;' + (mode === 'LIMIT' ? on : off);
+        }
+
+        // Live $ risk/reward + pip distance
+        function updateDollarValues() {
+            const a = window.lastAnalysis;
+            if (!a || a.signal === 'HOLD') return;
+            const entry = parseFloat(document.getElementById('editEntry')?.value);
+            const sl = parseFloat(document.getElementById('editSL')?.value);
+            const tp = parseFloat(document.getElementById('editTP')?.value);
+            const lots = parseFloat(document.getElementById('editLots')?.value);
+            const slSpan = document.getElementById('slDollar');
+            const tpSpan = document.getElementById('tpDollar');
+            const pipDiv = document.getElementById('pipInfo');
+            if (!slSpan || !tpSpan) return;
+
+            if ([entry, sl, tp, lots].some(isNaN) || lots <= 0) {
+                slSpan.textContent = '';
+                tpSpan.textContent = '';
+                return;
+            }
+
+            const toUSD = (diff, refPrice) => {
+                if (a.pair === 'XAUUSD') return diff * 100 * lots;
+                if (isCrypto(a.pair)) return diff * lots;   // 1 lot = 1 coin
+                if (a.pair.endsWith('JPY')) return (diff * 100000 * lots) / refPrice;
+                return diff * 100000 * lots;
+            };
+
+            // Direction check PEHLE - galat side ka SL/TP koi valid risk/reward nahi hai
+            const badSL = a.signal === 'BUY' ? (sl >= entry) : (sl <= entry);
+            const badTP = a.signal === 'BUY' ? (tp <= entry) : (tp >= entry);
+
+            if (badSL) {
+                slSpan.textContent = '⚠️ INVALID';
+            } else {
+                const risk = Math.abs(toUSD(entry - sl, sl));
+                slSpan.textContent = `(−$${risk.toFixed(2)})`;
+            }
+
+            if (badTP) {
+                tpSpan.textContent = '⚠️ INVALID';
+            } else {
+                const reward = Math.abs(toUSD(tp - entry, tp));
+                tpSpan.textContent = `(+$${reward.toFixed(2)})`;
+            }
+
+            // Pip / point distance - tight SL turant dikh jaye
+            if (pipDiv && !badSL) {
+                const slDist = Math.abs(entry - sl);
+                let distTxt;
+                if (a.pair === 'XAUUSD') {
+                    distTxt = '$' + slDist.toFixed(2) + ' move';
+                } else if (isCrypto(a.pair)) {
+                    distTxt = '$' + slDist.toFixed(2) + ' move';
+                } else if (a.pair.endsWith('JPY')) {
+                    distTxt = (slDist / 0.01).toFixed(1) + ' pips';
+                } else {
+                    distTxt = (slDist / 0.0001).toFixed(1) + ' pips';
+                }
+                const warn = (a.pair !== 'XAUUSD' && !isCrypto(a.pair) && slDist / 0.0001 < 15)
+                    ? ' ⚠️ tight - spread/noise se hit ho sakta hai'
+                    : '';
+                pipDiv.innerHTML = `SL distance: <b style="color:#ccc;">${distTxt}</b>${warn}`;
+            }
+
+            // Galat side ka SL/TP turant red border + message
+            const slInput = document.getElementById('editSL');
+            const tpInput = document.getElementById('editTP');
+            if (slInput) slInput.style.borderColor = badSL ? '#FF0000' : 'rgba(255,68,68,0.4)';
+            if (tpInput) tpInput.style.borderColor = badTP ? '#FF0000' : 'rgba(0,255,150,0.4)';
+
+            if ((badSL || badTP) && pipDiv) {
+                const msgs = [];
+                if (badSL) msgs.push(`SL ${a.signal === 'BUY' ? 'neeche' : 'upar'} hona chahiye`);
+                if (badTP) msgs.push(`TP ${a.signal === 'BUY' ? 'upar' : 'neeche'} hona chahiye`);
+                pipDiv.innerHTML = `<span style="color:#FF6666;">⚠️ ${msgs.join(' • ')} — RESET dabao</span>`;
+            }
+        }
+
+        function buildShareText() {
+            const a = window.lastAnalysis;
+            if (!a) return '';
+            // Use edited values if inputs exist, fallback to original
+            const entry = document.getElementById('editEntry')?.value || a.entryZone;
+            const sl = document.getElementById('editSL')?.value || a.slZone;
+            const tp = document.getElementById('editTP')?.value || a.tpZone;
+            const zones = a.signal === 'HOLD'
+                ? '\n⏳ No trade zone - wait for clear signal'
+                : `\n📋 Order: *${a.orderType}*\n💹 Current: ${a.currentPrice}\n📍 Entry: ${entry}\n🛑 SL: ${sl}\n🎯 TP: ${tp}\n\nRRR: ${a.rrr}:1`;
+            return `🤖 *${a.pair} Analysis*\n\n📊 Signal: *${a.signal}*\nRisk Score: ${a.riskScore}/100\nConfidence: ${a.confidence}%\n${zones}\n\n*ForexDiagnosis*\nAI-Powered Analysis`;
+        }
+
+        // System share sheet - user apna WhatsApp (SIM 1 ya SIM 2) khud choose kar sakta hai
+        async function shareWhatsApp() {
+            if (!window.lastAnalysis) return;
+            const text = buildShareText();
+
+            if (navigator.share) {
+                try {
+                    await navigator.share({ text: text });
+                    return;
+                } catch (e) {
+                    if (e.name === 'AbortError') return; // user cancelled
+                }
+            }
+            // Fallback: direct WhatsApp link (default app khulega)
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+        }
+
+        async function copySignal() {
+            if (!window.lastAnalysis) return;
+            const text = buildShareText().replace(/\*/g, ''); // plain text, no markdown
+            try {
+                await navigator.clipboard.writeText(text);
+                alert('✅ Copy ho gaya! Ab kisi bhi WhatsApp me paste kar do.');
+            } catch (e) {
+                alert('Copy nahi ho paya - Share button try karo.');
+            }
+        }
+
+        function savAnalysis() {
+            if (!window.lastAnalysis) return;
+            const data = {
+                timestamp: new Date().toISOString(),
+                ...window.lastAnalysis
+            };
+            
+            const saved = JSON.parse(localStorage.getItem(pk('forexDiagnosis')) || '[]');
+            saved.unshift(data);
+            saved.splice(30); // Keep last 30
+            localStorage.setItem(pk('forexDiagnosis'), JSON.stringify(saved));
+            
+            alert('✅ Analysis saved!');
+        }
+
+        function loadCachedData() {
+            const saved = JSON.parse(localStorage.getItem(pk('forexDiagnosis')) || '[]');
+            // Could display recent analyses here
+        }
+
+        // ===== Trade Tracker =====
+        function getTrades() {
+            return JSON.parse(localStorage.getItem(pk('myTrades')) || '[]');
+        }
+
+        // P/L in USD based on pair type, lots, and exit price
+        function calcPL(trade) {
+            if (trade.status !== 'CLOSED' || !trade.lots) return null;
+            const exit = trade.result === 'TP HIT' ? trade.tp : trade.sl;
+            const diff = trade.signal === 'BUY' ? (exit - trade.entry) : (trade.entry - exit);
+            let pl;
+            if (trade.pair === 'XAUUSD') {
+                pl = diff * 100 * trade.lots; // 1 lot gold = 100 oz
+            } else if (isCrypto(trade.pair)) {
+                pl = diff * trade.lots; // 1 lot = 1 coin
+            } else if (trade.pair.endsWith('JPY')) {
+                pl = (diff * 100000 * trade.lots) / exit; // convert JPY P/L to USD
+            } else {
+                pl = diff * 100000 * trade.lots; // USD-quoted majors
+            }
+            return pl;
+        }
+
+        function fmtPL(pl) {
+            if (pl === null || pl === undefined) return '';
+            const sign = pl >= 0 ? '+' : '−';
+            return `${sign}$${Math.abs(pl).toFixed(2)}`;
+        }
+
+        function saveTrades(trades) {
+            localStorage.setItem(pk('myTrades'), JSON.stringify(trades));
+        }
+
+        function recordTrade() {
+            if (!window.lastAnalysis) return;
+            const a = window.lastAnalysis;
+            if (a.signal === 'HOLD') return alert('HOLD signal pe trade record nahi hota');
+
+            // Read EDITED values from inputs (user modify kar sakta hai)
+            const entry = parseFloat(document.getElementById('editEntry')?.value);
+            const sl = parseFloat(document.getElementById('editSL')?.value);
+            const tp = parseFloat(document.getElementById('editTP')?.value);
+
+            if (isNaN(entry) || isNaN(sl) || isNaN(tp)) {
+                return alert('Entry/SL/TP values galat hain - numbers check karo');
+            }
+
+            // Direction validation - galat side ka SL/TP pakde
+            if (a.signal === 'BUY') {
+                if (sl >= entry) return alert('❌ BUY trade me SL entry se NEECHE hona chahiye!\nEntry: ' + entry + '\nSL: ' + sl);
+                if (tp <= entry) return alert('❌ BUY trade me TP entry se UPAR hona chahiye!\nEntry: ' + entry + '\nTP: ' + tp);
+            } else { // SELL
+                if (sl <= entry) return alert('❌ SELL trade me SL entry se UPAR hona chahiye!\nEntry: ' + entry + '\nSL: ' + sl);
+                if (tp >= entry) return alert('❌ SELL trade me TP entry se NEECHE hona chahiye!\nEntry: ' + entry + '\nTP: ' + tp);
+            }
+
+            const lots = parseFloat(document.getElementById('editLots')?.value);
+            if (isNaN(lots) || lots <= 0) return alert('Lot size galat hai - panel me sahi number daalo jaise 0.01');
+
+            const trades = getTrades();
+            const mode = localStorage.getItem(pk('entry_mode')) || 'LIMIT';
+            const isMarket = mode === 'MARKET';
+            const trade = {
+                id: Date.now(),
+                pair: a.pair,
+                signal: a.signal,
+                orderType: a.orderType || (a.signal + ' LIMIT'),
+                entryMode: mode,
+                quality: window.lastQuality ? window.lastQuality.grade : null,
+                qualityScore: window.lastQuality ? window.lastQuality.score : null,
+                lots: lots,
+                entry: entry,
+                sl: sl,
+                tp: tp,
+                openTime: new Date().toISOString(),
+                status: 'OPEN',
+                filled: isMarket,   // MARKET order turant fill hota hai
+                fillTime: isMarket ? new Date().toISOString() : null,
+                result: null,
+                closeTime: null
+            };
+            trades.unshift(trade);
+            trades.splice(100); // keep last 100
+            saveTrades(trades);
+            alert('✅ Trade record ho gaya!\nEntry: ' + entry + '\nSL: ' + sl + '\nTP: ' + tp + '\n\nDashboard pe "My Trades" me dikhega.');
+            closeAnalysisPanel();
+            renderTrades();
+        }
+
+        function renderTrades() {
+            const trades = getTrades();
+            const list = document.getElementById('tradesList');
+            const statsDiv = document.getElementById('tradeStats');
+            if (!list) return;
+
+            if (trades.length === 0) {
+                list.innerHTML = '<div style="text-align:center; padding:16px; color:#666; font-size:12px;">Abhi koi trade record nahi hai. Analysis me "✅ Maine Ye Trade Liya" dabao.</div>';
+                statsDiv.style.display = 'none';
+                return;
+            }
+
+            const now = new Date();
+            const currentMonthKey = `${now.getFullYear()}-${now.getMonth()}`;
+            const monthKey = t => {
+                const d = new Date(t.openTime);
+                return `${d.getFullYear()}-${d.getMonth()}`;
+            };
+            const monthLabel = t => {
+                const d = new Date(t.openTime);
+                return d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+            };
+
+            const currentMonthTrades = trades.filter(t => monthKey(t) === currentMonthKey);
+            const olderTrades = trades.filter(t => monthKey(t) !== currentMonthKey);
+
+            // Stats bar = CURRENT MONTH only
+            const closed = currentMonthTrades.filter(t => t.status === 'CLOSED');
+            const wins = closed.filter(t => t.result === 'TP HIT').length;
+            const losses = closed.filter(t => t.result === 'SL HIT').length;
+            const openCount = currentMonthTrades.filter(t => t.status === 'OPEN').length;
+            const winRate = closed.length ? ((wins / closed.length) * 100).toFixed(0) : '--';
+
+            statsDiv.style.display = 'flex';
+            statsDiv.innerHTML = `
+                <div style="flex:1; text-align:center; padding:10px; background:#141414; border:1px solid rgba(0,255,150,0.3); border-radius:8px;">
+                    <div style="font-size:16px; font-weight:700; color:#00FF96;">${wins}</div>
+                    <div style="font-size:9px; color:#888;">TP HIT</div>
+                </div>
+                <div style="flex:1; text-align:center; padding:10px; background:#141414; border:1px solid rgba(255,68,68,0.3); border-radius:8px;">
+                    <div style="font-size:16px; font-weight:700; color:#FF4444;">${losses}</div>
+                    <div style="font-size:9px; color:#888;">SL HIT</div>
+                </div>
+                <div style="flex:1; text-align:center; padding:10px; background:#141414; border:1px solid rgba(255,77,157,0.3); border-radius:8px;">
+                    <div style="font-size:16px; font-weight:700; color:#FF4D9D;">${openCount}</div>
+                    <div style="font-size:9px; color:#888;">OPEN</div>
+                </div>
+                <div style="flex:1; text-align:center; padding:10px; background:#141414; border:1px solid #2a2a2a; border-radius:8px;">
+                    <div style="font-size:16px; font-weight:700; color:#e0e0e0;">${winRate}%</div>
+                    <div style="font-size:9px; color:#888;">WIN RATE</div>
+                </div>
+            `;
+
+            // Current month: full trade cards
+            const currentMonthName = now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+            let html = `<div style="font-size:12px; font-weight:700; color:#00FF96; margin:6px 0 8px; letter-spacing:1px;">▸ ${currentMonthName} (This Month)</div>`;
+
+            if (currentMonthTrades.length === 0) {
+                html += '<div style="text-align:center; padding:12px; color:#666; font-size:11px;">Is month abhi koi trade nahi.</div>';
+            } else {
+                html += currentMonthTrades.map(t => {
+                    const d = new Date(t.openTime);
+                    const dateStr = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) + ' ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+                    const statusBadge = t.status === 'OPEN'
+                        ? (t.filled
+                            ? '<span style="color:#00CCFF; font-weight:700;">▶ RUNNING</span>'
+                            : '<span style="color:#FF4D9D; font-weight:700;">⏳ WAITING FILL</span>')
+                        : t.result === 'TP HIT'
+                            ? '<span style="color:#00FF96; font-weight:700;">✅ TP HIT</span>'
+                            : '<span style="color:#FF4444; font-weight:700;">❌ SL HIT</span>';
+                    const sigColor = t.signal === 'BUY' ? '#00FF96' : '#FF4444';
+                    const isRunning = t.status === 'OPEN' && t.filled;
+                    const livePLVal = (window.livePL && window.livePL[t.id] !== undefined) ? window.livePL[t.id] : null;
+                    let plBadge = '';
+                    if (isRunning && livePLVal !== null) {
+                        // Live P/L for running trade
+                        plBadge = `<span style="font-weight:700; color:${livePLVal >= 0 ? '#00FF96' : '#FF4444'};">${fmtPL(livePLVal)} <span style="font-size:8px; color:#00CCFF;">LIVE</span></span>`;
+                    } else {
+                        const tradePL = t.pl !== undefined && t.pl !== null ? t.pl : calcPL(t);
+                        plBadge = tradePL !== null
+                            ? `<span style="font-weight:700; color:${tradePL >= 0 ? '#00FF96' : '#FF4444'};">${fmtPL(tradePL)}</span>`
+                            : '';
+                    }
+                    return `
+                    <div style="background:#141414; border:1px solid #2a2a2a; border-radius:8px; padding:12px; margin-bottom:8px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                            <span style="font-weight:700; color:#FF4D9D;">${t.pair} <span style="color:${sigColor}; font-size:11px;">${t.signal}</span> <span style="color:#888; font-size:10px;">${t.lots ? t.lots + ' lot' : ''}${t.entryMode ? ' · ' + (t.entryMode === 'MARKET' ? '⚡' : '⏳') : ''}${t.quality ? ' · ' + (t.quality === 'STRONG' ? '🟢' : t.quality === 'MODERATE' ? '🟡' : '🔴') : ''}</span></span>
+                            ${statusBadge}
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:11px; color:#aaa;">
+                            <span>E: ${t.entry}</span>
+                            <span>SL: ${t.sl}</span>
+                            <span>TP: ${t.tp}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+                            <span style="font-size:10px; color:#666;">${dateStr}</span>
+                            <span style="display:flex; gap:8px; align-items:center;">
+                                ${plBadge}
+                                <button onclick="openChart('${t.pair}')" style="padding:2px 8px; font-size:9px; background:rgba(255,77,157,0.15); color:#FF4D9D; border:1px solid rgba(255,77,157,0.3); border-radius:6px;">📈</button>
+                                <button onclick="deleteTrade(${t.id})" style="padding:2px 8px; font-size:9px; background:rgba(255,68,68,0.15); color:#FF8888; border:1px solid rgba(255,68,68,0.3); border-radius:6px;">🗑️</button>
+                            </span>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            // Older months: compact summary only (TP/SL/win rate per month)
+            if (olderTrades.length > 0) {
+                const monthGroups = {};
+                olderTrades.forEach(t => {
+                    const key = monthKey(t);
+                    if (!monthGroups[key]) monthGroups[key] = { label: monthLabel(t), trades: [] };
+                    monthGroups[key].trades.push(t);
+                });
+
+                html += `<div style="font-size:12px; font-weight:700; color:#888; margin:16px 0 8px; letter-spacing:1px;">▸ PREVIOUS MONTHS</div>`;
+
+                // Sort newest month first
+                Object.keys(monthGroups).sort().reverse().forEach(key => {
+                    const g = monthGroups[key];
+                    const mClosed = g.trades.filter(t => t.status === 'CLOSED');
+                    const mWins = mClosed.filter(t => t.result === 'TP HIT').length;
+                    const mLosses = mClosed.filter(t => t.result === 'SL HIT').length;
+                    const mOpen = g.trades.filter(t => t.status === 'OPEN').length;
+                    const mRate = mClosed.length ? ((mWins / mClosed.length) * 100).toFixed(0) + '%' : '--';
+                    html += `
+                    <div style="background:#141414; border:1px solid #2a2a2a; border-radius:8px; padding:12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-weight:600; color:#ccc; font-size:12px;">${g.label}</span>
+                        <span style="font-size:11px;">
+                            <span style="color:#00FF96;">✅ ${mWins}</span> &nbsp;
+                            <span style="color:#FF4444;">❌ ${mLosses}</span> &nbsp;
+                            ${mOpen > 0 ? `<span style="color:#FF4D9D;">⏳ ${mOpen}</span> &nbsp;` : ''}
+                            <span style="color:#e0e0e0; font-weight:700;">${mRate}</span>
+                        </span>
+                    </div>`;
+                });
+            }
+
+            list.innerHTML = html;
+        }
+
+        function deleteTrade(id) {
+            if (!confirm('Ye trade delete karna hai?')) return;
+            saveTrades(getTrades().filter(t => t.id !== id));
+            renderTrades();
+        }
+
+        // ===== Live Chart (TradingView) =====
+        let chartPair = null;
+        let chartInterval = '60';
+        let showSR = false;
+        let showFib = false;
+        let fibData = null;
+
+        function tvSymbol(pair) {
+            if (pair === 'XAUUSD') return 'OANDA:XAUUSD';
+            if (isCrypto(pair)) return 'BINANCE:' + pair.replace('USD', 'USDT');
+            return 'FX:' + pair;
+        }
+
+        function openChart(pair) {
+            chartPair = pair;
+            renderChart();
+        }
+
+        function setChartTF(tf, btn) {
+            chartInterval = tf;
+            fibData = null; // naye timeframe pe fib dobara calculate hoga
+            renderChart();
+        }
+
+        function renderChart() {
+            const win = document.getElementById('chartWindow');
+            const tfs = [
+                { v: '5', l: '5m' },
+                { v: '15', l: '15m' },
+                { v: '30', l: '30m' },
+                { v: '60', l: '1H' },
+                { v: '240', l: '4H' },
+                { v: 'D', l: '1D' }
+            ];
+            const tfButtons = tfs.map(t => `
+                <button onclick="setChartTF('${t.v}')" style="flex:1; padding:8px 4px; font-size:12px; font-weight:700; background:${chartInterval === t.v ? 'rgba(255,77,157,0.2)' : '#141414'}; color:${chartInterval === t.v ? '#FF4D9D' : '#777'}; border:1px solid ${chartInterval === t.v ? '#FF4D9D' : '#2a2a2a'}; border-radius:6px; font-family:inherit;">${t.l}</button>
+            `).join('');
+
+            // Support/Resistance = TradingView built-in Pivot Points study (chart pe lines dikhengi)
+            const studies = showSR ? '&studies=' + encodeURIComponent('PivotPointsStandard@tv-basicstudies') : '';
+            const src = `https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(tvSymbol(chartPair))}&interval=${chartInterval}&theme=dark&style=1&locale=en&hide_side_toolbar=1&allow_symbol_change=0&save_image=0${studies}`;
+
+            const toggleStyle = (on, color) => `flex:1; padding:8px 4px; font-size:11px; font-weight:700; background:${on ? 'rgba(255,77,157,0.2)' : '#141414'}; color:${on ? color : '#777'}; border:1px solid ${on ? color : '#2a2a2a'}; border-radius:6px; font-family:inherit;`;
+
+            win.style.display = 'flex';
+            win.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:#0d0d0d; border-bottom:1px solid #2a2a2a;">
+                    <span style="font-weight:700; color:#FF4D9D; font-size:15px; letter-spacing:1px;">${chartPair} LIVE</span>
+                    <button onclick="closeChart()" style="width:32px; height:32px; border-radius:50%; background:#1a1a1a; border:1px solid #FF4D9D; color:#FF4D9D; font-size:15px;">✕</button>
+                </div>
+                <div style="display:flex; gap:5px; padding:8px 10px 4px; background:#0d0d0d;">
+                    ${tfButtons}
+                </div>
+                <div style="display:flex; gap:5px; padding:4px 10px 8px; background:#0d0d0d;">
+                    <button onclick="toggleSR()" style="${toggleStyle(showSR, '#00CCFF')}">📊 S/R LEVELS</button>
+                    <button onclick="toggleFib()" style="${toggleStyle(showFib, '#FF9EE0')}">🌀 FIBONACCI</button>
+                </div>
+                <div id="fibPanel" style="background:#0d0d0d; padding:0 10px;"></div>
+                <iframe src="${src}" style="flex:1; width:100%; border:none;" allowfullscreen></iframe>
+            `;
+
+            if (showFib) loadFibLevels();
+        }
+
+        function toggleSR() {
+            showSR = !showSR;
+            renderChart();
+        }
+
+        function toggleFib() {
+            showFib = !showFib;
+            if (!showFib) {
+                fibData = null;
+                renderChart();
+            } else {
+                renderChart();
+            }
+        }
+
+        // Fibonacci retracement - recent swing high/low se calculate
+        async function loadFibLevels() {
+            const panel = document.getElementById('fibPanel');
+            if (!panel) return;
+
+            const apiKey = localStorage.getItem(pk('td_api_key'));
+            if (!apiKey) {
+                panel.innerHTML = '<div style="padding:10px; color:#888; font-size:11px;">API key chahiye - ⚙️ Settings me daalo</div>';
+                return;
+            }
+
+            // Cache: same pair+interval dobara fetch mat karo
+            const cacheKey = chartPair + '_' + chartInterval;
+            if (fibData && fibData.key === cacheKey) {
+                renderFibPanel(fibData);
+                return;
+            }
+
+            panel.innerHTML = '<div style="padding:10px; color:#FF4D9D; font-size:11px;">Fib levels calculate ho rahe hain...</div>';
+
+            const tvToTd = { '5': '5min', '15': '15min', '30': '30min', '60': '1h', '240': '4h', 'D': '1day' };
+            const interval = tvToTd[chartInterval] || '1h';
+
+            try {
+                const data = await tdFetch('time_series', toTDSymbol(chartPair), apiKey, interval, '&outputsize=100');
+                const candles = data.values || [];
+                if (candles.length < 10) throw new Error('Data kam hai');
+
+                let high = -Infinity, low = Infinity;
+                candles.forEach(c => {
+                    high = Math.max(high, parseFloat(c.high));
+                    low = Math.min(low, parseFloat(c.low));
+                });
+
+                const decimals = chartPair === 'XAUUSD' ? 2 : (chartPair.endsWith('JPY') ? 3 : (isCrypto(chartPair) ? 2 : 5));
+                const range = high - low;
+                const ratios = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+                // Uptrend swing (low → high): retracements high se neeche
+                const levels = ratios.map(r => ({
+                    label: (r * 100).toFixed(1) + '%',
+                    price: (high - range * r).toFixed(decimals),
+                    key: r
+                }));
+
+                fibData = { key: cacheKey, high: high.toFixed(decimals), low: low.toFixed(decimals), levels };
+                renderFibPanel(fibData);
+            } catch (e) {
+                panel.innerHTML = `<div style="padding:10px; color:#FF8888; font-size:11px;">Fib load nahi hua: ${e.message}</div>`;
+            }
+        }
+
+        function renderFibPanel(d) {
+            const panel = document.getElementById('fibPanel');
+            if (!panel) return;
+            const rows = d.levels.map(l => {
+                const isKey = l.key === 0.5 || l.key === 0.618;
+                return `<span style="flex:1; text-align:center; padding:5px 2px; background:${isKey ? 'rgba(255,158,224,0.15)' : '#141414'}; border:1px solid ${isKey ? '#FF9EE0' : '#2a2a2a'}; border-radius:5px;">
+                    <span style="display:block; font-size:9px; color:#888;">${l.label}</span>
+                    <span style="display:block; font-size:11px; color:${isKey ? '#FF9EE0' : '#ccc'}; font-weight:700;">${l.price}</span>
+                </span>`;
+            }).join('');
+            panel.innerHTML = `
+                <div style="font-size:9px; color:#666; margin-bottom:4px; text-align:center;">FIB RETRACEMENT · Swing H: ${d.high} · L: ${d.low} (last 100 candles)</div>
+                <div style="display:flex; gap:3px; margin-bottom:8px;">${rows}</div>
+            `;
+        }
+
+        function closeChart() {
+            const win = document.getElementById('chartWindow');
+            win.style.display = 'none';
+            win.innerHTML = '';
+        }
+
+        // ===== Terminal-Style Stats Window =====
+        function openStatsWindow() {
+            const win = document.getElementById('statsWindow');
+            win.innerHTML = buildStatsHTML();
+            win.style.display = 'block';
+        }
+
+        function closeStatsWindow() {
+            document.getElementById('statsWindow').style.display = 'none';
+        }
+
+        function buildStatsHTML() {
+            const trades = getTrades();
+            const closed = trades.filter(t => t.status === 'CLOSED');
+            const wins = closed.filter(t => t.result === 'TP HIT').length;
+            const losses = closed.filter(t => t.result === 'SL HIT').length;
+            const pending = trades.filter(t => t.status === 'OPEN').length;
+            const acc = closed.length ? ((wins / closed.length) * 100).toFixed(0) : 0;
+            // Expectancy with RRR 2:1 → win gives +2R, loss gives -1R
+            const expectancy = closed.length ? (((wins * 2) - losses) / closed.length).toFixed(2) : '0.00';
+            const totalPL = closed.reduce((sum, t) => {
+                const pl = t.pl !== undefined && t.pl !== null ? t.pl : calcPL(t);
+                return sum + (pl || 0);
+            }, 0);
+            const plColor = totalPL >= 0 ? '#00FF96' : '#FF4444';
+
+            const A = '#FF4D9D'; // amber
+            const box = `background:#141414; border:1px solid #2a2a2a; border-radius:8px;`;
+            const statBox = (val, label, color = A) => `
+                <div style="${box} flex:1; text-align:center; padding:16px 4px;">
+                    <div style="font-size:24px; font-weight:700; color:${color};">${val}</div>
+                    <div style="font-size:10px; color:#777; letter-spacing:2px; margin-top:4px;">${label}</div>
+                </div>`;
+
+            // Entry mode comparison (MARKET vs LIMIT)
+            const modeMap = { 'MARKET': { total: 0, tp: 0, sl: 0, pl: 0 }, 'LIMIT': { total: 0, tp: 0, sl: 0, pl: 0 } };
+            trades.forEach(t => {
+                const m = t.entryMode || 'LIMIT';
+                if (!modeMap[m]) return;
+                modeMap[m].total++;
+                if (t.result === 'TP HIT') modeMap[m].tp++;
+                if (t.result === 'SL HIT') modeMap[m].sl++;
+                if (t.status === 'CLOSED') {
+                    const p = t.pl !== undefined && t.pl !== null ? t.pl : calcPL(t);
+                    modeMap[m].pl += (p || 0);
+                }
+            });
+            const modeRows = ['MARKET', 'LIMIT'].map(m => {
+                const s = modeMap[m];
+                const c = s.tp + s.sl;
+                const acc = c ? ((s.tp / c) * 100).toFixed(0) + '%' : '—';
+                const plCol = s.pl >= 0 ? '#00FF96' : '#FF4444';
+                return `<tr style="border-bottom:1px solid #222;">
+                    <td style="padding:10px 4px; color:#eee; font-weight:700;">${m === 'MARKET' ? '⚡ MARKET' : '⏳ LIMIT'}</td>
+                    <td style="padding:10px 4px; text-align:center; color:#ccc;">${s.total}</td>
+                    <td style="padding:10px 4px; text-align:center; color:#00FF96;">${s.tp}</td>
+                    <td style="padding:10px 4px; text-align:center; color:#FF4444;">${s.sl}</td>
+                    <td style="padding:10px 4px; text-align:center; color:${A};">${acc}</td>
+                    <td style="padding:10px 4px; text-align:center; color:${plCol}; font-weight:700;">${c ? fmtPL(s.pl) : '—'}</td>
+                </tr>`;
+            }).join('');
+
+            // Quality-wise stats (STRONG vs MODERATE vs WEAK) - proof ki filter kaam karta hai
+            const qMap = { 'STRONG': { total:0,tp:0,sl:0,pl:0 }, 'MODERATE': { total:0,tp:0,sl:0,pl:0 }, 'WEAK': { total:0,tp:0,sl:0,pl:0 } };
+            trades.forEach(t => {
+                const g = t.quality;
+                if (!g || !qMap[g]) return;
+                qMap[g].total++;
+                if (t.result === 'TP HIT') qMap[g].tp++;
+                if (t.result === 'SL HIT') qMap[g].sl++;
+                if (t.status === 'CLOSED') {
+                    const p = t.pl !== undefined && t.pl !== null ? t.pl : calcPL(t);
+                    qMap[g].pl += (p || 0);
+                }
+            });
+            const qColors = { 'STRONG':'#00FF96', 'MODERATE':'#FF4D9D', 'WEAK':'#FF4444' };
+            const qualityRows = ['STRONG','MODERATE','WEAK'].map(g => {
+                const s = qMap[g];
+                const c = s.tp + s.sl;
+                const acc = c ? ((s.tp / c) * 100).toFixed(0) + '%' : '—';
+                const plCol = s.pl >= 0 ? '#00FF96' : '#FF4444';
+                return `<tr style="border-bottom:1px solid #222;">
+                    <td style="padding:10px 4px; color:${qColors[g]}; font-weight:700;">${g}</td>
+                    <td style="padding:10px 4px; text-align:center; color:#ccc;">${s.total}</td>
+                    <td style="padding:10px 4px; text-align:center; color:#00FF96;">${s.tp}</td>
+                    <td style="padding:10px 4px; text-align:center; color:#FF4444;">${s.sl}</td>
+                    <td style="padding:10px 4px; text-align:center; color:${A};">${acc}</td>
+                    <td style="padding:10px 4px; text-align:center; color:${plCol}; font-weight:700;">${c ? fmtPL(s.pl) : '—'}</td>
+                </tr>`;
+            }).join('');
+
+            // Pair-wise stats
+            const pairMap = {};
+            trades.forEach(t => {
+                if (!pairMap[t.pair]) pairMap[t.pair] = { total: 0, tp: 0, sl: 0 };
+                pairMap[t.pair].total++;
+                if (t.result === 'TP HIT') pairMap[t.pair].tp++;
+                if (t.result === 'SL HIT') pairMap[t.pair].sl++;
+            });
+            const pairRows = Object.keys(pairMap).map(p => {
+                const s = pairMap[p];
+                const pClosed = s.tp + s.sl;
+                const pAcc = pClosed ? ((s.tp / pClosed) * 100).toFixed(0) + '%' : '—';
+                return `<tr style="border-bottom:1px solid #222;">
+                    <td style="padding:10px 4px; color:#eee; font-weight:700;">${p}</td>
+                    <td style="padding:10px 4px; text-align:center; color:#ccc;">${s.total}</td>
+                    <td style="padding:10px 4px; text-align:center; color:#00FF96;">${s.tp}</td>
+                    <td style="padding:10px 4px; text-align:center; color:#FF4444;">${s.sl}</td>
+                    <td style="padding:10px 4px; text-align:center; color:${A};">${pAcc}</td>
+                </tr>`;
+            }).join('') || `<tr><td colspan="5" style="padding:14px; color:#666;">Abhi koi trade nahi</td></tr>`;
+
+            // Monthly stats
+            const monthMap = {};
+            trades.forEach(t => {
+                const d = new Date(t.openTime);
+                const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
+                const label = d.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+                if (!monthMap[key]) monthMap[key] = { label, total: 0, tp: 0, sl: 0, pl: 0 };
+                monthMap[key].total++;
+                if (t.result === 'TP HIT') monthMap[key].tp++;
+                if (t.result === 'SL HIT') monthMap[key].sl++;
+                if (t.status === 'CLOSED') {
+                    const tpl = t.pl !== undefined && t.pl !== null ? t.pl : calcPL(t);
+                    monthMap[key].pl += (tpl || 0);
+                }
+            });
+            const monthRows = Object.keys(monthMap).sort().reverse().map(k => {
+                const m = monthMap[k];
+                const mClosed = m.tp + m.sl;
+                const mAcc = mClosed ? ((m.tp / mClosed) * 100).toFixed(0) + '%' : '—';
+                const mPLColor = m.pl >= 0 ? '#00FF96' : '#FF4444';
+                return `<tr style="border-bottom:1px solid #222;">
+                    <td style="padding:10px 4px; color:#eee;">${m.label}</td>
+                    <td style="padding:10px 4px; text-align:center; color:#ccc;">${m.total}</td>
+                    <td style="padding:10px 4px; text-align:center; color:#00FF96;">${m.tp}</td>
+                    <td style="padding:10px 4px; text-align:center; color:#FF4444;">${m.sl}</td>
+                    <td style="padding:10px 4px; text-align:center; color:${A};">${mAcc}</td>
+                    <td style="padding:10px 4px; text-align:center; color:${mPLColor}; font-weight:700;">${mClosed ? fmtPL(m.pl) : '—'}</td>
+                </tr>`;
+            }).join('') || `<tr><td colspan="6" style="padding:14px; color:#666;">Abhi koi closed trade nahi</td></tr>`;
+
+            const th = `padding:8px 4px; font-size:10px; color:#777; letter-spacing:2px; text-align:center; border-bottom:1px solid #333;`;
+
+            return `
+                <button onclick="closeStatsWindow()" style="position:fixed; top:12px; right:12px; z-index:1101; width:36px; height:36px; border-radius:50%; background:#1a1a1a; border:1px solid ${A}; color:${A}; font-size:16px;">✕</button>
+
+                <div style="${box} padding:16px; margin-bottom:14px;">
+                    <div style="font-size:20px; font-weight:700; color:${A}; letter-spacing:3px; margin-bottom:6px;">PERFORMANCE</div>
+                    <div style="font-size:11px; color:#777; margin-bottom:14px;">Accuracy = TP / (TP+SL). Trade record karke "Check Results" se auto-update hota hai.</div>
+                    <div style="display:flex; gap:8px; margin-bottom:8px;">
+                        ${statBox(closed.length, 'CLOSED')}
+                        ${statBox(acc + '%', 'ACCURACY')}
+                        ${statBox(expectancy + 'R', 'EXPECTANCY')}
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        ${statBox(wins, 'TP HIT', '#00FF96')}
+                        ${statBox(losses, 'SL HIT', '#FF4444')}
+                        ${statBox(pending, 'PENDING')}
+                    </div>
+                    <div style="display:flex; gap:8px; margin-top:8px;">
+                        ${statBox(fmtPL(totalPL) || '$0.00', 'TOTAL P/L', plColor)}
+                    </div>
+                </div>
+
+                <div style="${box} padding:16px; margin-bottom:14px;">
+                    <div style="font-size:20px; font-weight:700; color:${A}; letter-spacing:3px; margin-bottom:6px;">ENTRY MODE</div>
+                    <div style="font-size:10px; color:#777; margin-bottom:10px;">Kaunsa entry method behtar chal raha hai - 30+ trades baad hi bharosa karo</div>
+                    <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                        <tr>
+                            <th style="${th} text-align:left;">MODE</th>
+                            <th style="${th}">TRADES</th>
+                            <th style="${th}">TP</th>
+                            <th style="${th}">SL</th>
+                            <th style="${th}">ACC%</th>
+                            <th style="${th}">P/L</th>
+                        </tr>
+                        ${modeRows}
+                    </table>
+                </div>
+
+                <div style="${box} padding:16px; margin-bottom:14px;">
+                    <div style="font-size:20px; font-weight:700; color:${A}; letter-spacing:3px; margin-bottom:6px;">SIGNAL QUALITY</div>
+                    <div style="font-size:10px; color:#777; margin-bottom:10px;">STRONG signals ka win rate zyada hona chahiye - yehi filter ki value hai</div>
+                    <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                        <tr>
+                            <th style="${th} text-align:left;">GRADE</th>
+                            <th style="${th}">TRADES</th>
+                            <th style="${th}">TP</th>
+                            <th style="${th}">SL</th>
+                            <th style="${th}">ACC%</th>
+                            <th style="${th}">P/L</th>
+                        </tr>
+                        ${qualityRows}
+                    </table>
+                </div>
+
+                <div style="${box} padding:16px; margin-bottom:14px;">
+                    <div style="font-size:20px; font-weight:700; color:${A}; letter-spacing:3px; margin-bottom:10px;">PAIR-WISE</div>
+                    <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                        <tr>
+                            <th style="${th} text-align:left;">PAIR</th>
+                            <th style="${th}">TRADES</th>
+                            <th style="${th}">TP</th>
+                            <th style="${th}">SL</th>
+                            <th style="${th}">ACC%</th>
+                        </tr>
+                        ${pairRows}
+                    </table>
+                </div>
+
+                <div style="${box} padding:16px; margin-bottom:14px;">
+                    <div style="font-size:20px; font-weight:700; color:${A}; letter-spacing:3px; margin-bottom:10px;">MONTHLY</div>
+                    <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                        <tr>
+                            <th style="${th} text-align:left;">MONTH</th>
+                            <th style="${th}">TRADES</th>
+                            <th style="${th}">TP</th>
+                            <th style="${th}">SL</th>
+                            <th style="${th}">ACC%</th>
+                            <th style="${th}">P/L</th>
+                        </tr>
+                        ${monthRows}
+                    </table>
+                </div>
+
+                <div style="${box} padding:16px; margin-bottom:20px;">
+                    <div style="font-size:20px; font-weight:700; color:${A}; letter-spacing:3px; margin-bottom:10px;">BACKUP</div>
+                    <div style="font-size:11px; color:#777; margin-bottom:12px;">Trade history JSON file me export karo. Phone change ya cache clear se pehle backup zaroor lo.</div>
+                    <div style="display:flex; gap:10px;">
+                        <button onclick="exportTrades()" style="flex:1; padding:12px; background:#1a1a1a; color:#00FF96; border:1px solid rgba(0,255,150,0.4); border-radius:8px; font-family:inherit; font-weight:700;">⬇ EXPORT</button>
+                        <button onclick="document.getElementById('importFile').click()" style="flex:1; padding:12px; background:#1a1a1a; color:${A}; border:1px solid rgba(255,77,157,0.4); border-radius:8px; font-family:inherit; font-weight:700;">⬆ IMPORT</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ===== Backup / Restore =====
+        function exportTrades() {
+            const trades = getTrades();
+            if (trades.length === 0) return alert('Koi trade nahi hai export karne ke liye.');
+            const blob = new Blob([JSON.stringify(trades, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const dateStr = new Date().toISOString().slice(0, 10);
+            a.href = url;
+            a.download = `ForexDiagnosis-PRO-Backup-${dateStr}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importTrades(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (!Array.isArray(imported)) throw new Error('Invalid format');
+
+                    const existing = getTrades();
+                    const existingIds = new Set(existing.map(t => t.id));
+                    const newTrades = imported.filter(t => t.id && !existingIds.has(t.id));
+
+                    const merged = [...existing, ...newTrades].sort((a, b) => b.id - a.id);
+                    merged.splice(100);
+                    saveTrades(merged);
+                    renderTrades();
+                    openStatsWindow(); // refresh stats view
+                    alert(`✅ ${newTrades.length} naye trade(s) import hue! (Duplicates skip kiye)`);
+                } catch (err) {
+                    alert('❌ File galat hai - sirf is app se export ki hui JSON file use karo.');
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        // Live P/L - running trades ka current profit/loss (button dabane pe)
+        window.livePL = {};  // { tradeId: plValue }
+        async function updateLivePL() {
+            const apiKey = localStorage.getItem(pk('td_api_key'));
+            if (!apiKey) { openSettings(); return; }
+            const trades = getTrades();
+            const running = trades.filter(t => t.status === 'OPEN' && t.filled);
+            if (running.length === 0) { alert('Koi running trade nahi hai.'); return; }
+
+            const btn = document.getElementById('livePLBtn');
+            if (btn) { btn.textContent = '⏳ Updating...'; btn.disabled = true; }
+
+            // Unique pairs - ek pair ka ek hi call (API bachao)
+            const pairs = [...new Set(running.map(t => t.pair))];
+            const prices = {};
+            for (const pair of pairs) {
+                try {
+                    const q = await tdFetch('quote', toTDSymbol(pair), apiKey, '1min');
+                    prices[pair] = parseFloat(q.close);
+                } catch (e) { console.log('price fail', pair); }
+            }
+
+            // Har running trade ka live P/L calculate
+            for (const t of running) {
+                const cur = prices[t.pair];
+                if (!cur || !t.lots) continue;
+                const diff = t.signal === 'BUY' ? (cur - t.entry) : (t.entry - cur);
+                let pl;
+                if (t.pair === 'XAUUSD') pl = diff * 100 * t.lots;
+                else if (isCrypto(t.pair)) pl = diff * t.lots;
+                else if (t.pair.endsWith('JPY')) pl = (diff * 100000 * t.lots) / cur;
+                else pl = diff * 100000 * t.lots;
+                window.livePL[t.id] = pl;
+            }
+
+            if (btn) { btn.textContent = '💰 Live P/L'; btn.disabled = false; }
+            renderTrades();
+        }
+
+        async function checkTradeResults() {
+            const apiKey = localStorage.getItem(pk('td_api_key'));
+            if (!apiKey) return openSettings();
+
+            const trades = getTrades();
+            const openTrades = trades.filter(t => t.status === 'OPEN');
+            if (openTrades.length === 0) return alert('Koi OPEN trade nahi hai check karne ke liye.');
+
+            const btn = event?.target;
+            if (btn) { btn.textContent = '⏳ Checking...'; btn.disabled = true; }
+
+            let updated = 0;
+            for (const trade of openTrades) {
+                // Purane MARKET trades jo galti se unfilled save hue the - theek karo
+                if (!trade.filled && trade.entryMode === 'MARKET') {
+                    trade.filled = true;
+                    trade.fillTime = trade.openTime;
+                    updated++;
+                }
+                try {
+                    const symbol = toTDSymbol(trade.pair);
+                    // Fetch 5min candles since trade open - FORCE UTC timezone so start_date
+                    // and candle datetimes match our stored UTC openTime exactly
+                    const openMs = new Date(trade.openTime).getTime();
+                    const startDate = new Date(trade.openTime).toISOString().slice(0, 19).replace('T', ' ');
+                    const data = await tdFetch('time_series', symbol, apiKey, '5min', `&start_date=${encodeURIComponent(startDate)}&outputsize=500&order=ASC&timezone=UTC`);
+                    const candles = data.values || [];
+
+                    for (const c of candles) {
+                        // Safety: skip any candle that OPENED before the trade was taken.
+                        const candleMs = new Date(c.datetime.replace(' ', 'T') + 'Z').getTime();
+                        if (isNaN(candleMs) || candleMs < openMs) continue;
+
+                        const high = parseFloat(c.high);
+                        const low = parseFloat(c.low);
+
+                        // PHASE 1: Limit order fill check (price must touch entry first)
+                        if (!trade.filled) {
+                            const touchedEntry = trade.signal === 'BUY'
+                                ? low <= trade.entry   // Buy Limit fills when price dips to entry
+                                : high >= trade.entry; // Sell Limit fills when price rises to entry
+                            if (touchedEntry) {
+                                trade.filled = true;
+                                trade.fillTime = c.datetime;
+                                updated++;
+                                // Conservative: same candle jisme fill hua, usme SL bhi hit ho sakta hai
+                                // (wick order unknown → SL maan lete hain agar touched)
+                            } else {
+                                continue; // abhi fill nahi hua - SL/TP check mat karo
+                            }
+                        }
+
+                        // PHASE 2: SL/TP check (sirf fill hone ke baad)
+                        let result = null;
+                        if (trade.signal === 'BUY') {
+                            if (low <= trade.sl) result = 'SL HIT';
+                            else if (high >= trade.tp) result = 'TP HIT';
+                        } else { // SELL
+                            if (high >= trade.sl) result = 'SL HIT';
+                            else if (low <= trade.tp) result = 'TP HIT';
+                        }
+
+                        if (result) {
+                            trade.status = 'CLOSED';
+                            trade.result = result;
+                            trade.closeTime = c.datetime;
+                            trade.pl = calcPL(trade);
+                            updated++;
+                            break;
+                        }
+                    }
+                } catch (e) {
+                    console.log('Check failed for', trade.pair, e.message);
+                }
+            }
+
+            saveTrades(trades);
+            renderTrades();
+            if (btn) { btn.textContent = '🔄 Check Results'; btn.disabled = false; }
+            alert(updated > 0 ? `✅ ${updated} trade(s) ka result update hua!` : 'Abhi koi trade TP/SL tak nahi pahucha - sab OPEN hain.');
+        }
+
+        // ===== PWA Install & Service Worker =====
+        let deferredPrompt;
+        const installBtn = document.getElementById('installBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (installBtn) installBtn.style.display = 'block';
+        });
+
+        function installApp() {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('PWA installed');
+                }
+                deferredPrompt = null;
+                if (installBtn) installBtn.style.display = 'none';
+            });
+        }
+
+        window.addEventListener('appinstalled', () => {
+            if (installBtn) installBtn.style.display = 'none';
+            deferredPrompt = null;
+        });
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((reg) => console.log('SW registered:', reg.scope))
+                    .catch((err) => console.log('SW registration failed:', err));
+            });
+        }
+    </script>
+</body>
+</html>
