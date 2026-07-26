@@ -513,12 +513,16 @@
     </div>
 
     <script>
+        // ===== PRO STORAGE NAMESPACE (personal se 100% alag) =====
+        const PRO_NS = 'FXDPRO_v1_';
+        function pk(key) { return PRO_NS + key; }
+
         // ===== LICENSE SYSTEM =====
         const LICENSE_SECRET = 'ANV-FXD-2026-K7X';
         const OWNER_WHATSAPP = '919765838383';
 
         function getDeviceId() {
-            let raw = localStorage.getItem('device_fp');
+            let raw = localStorage.getItem(pk('device_fp'));
             if (!raw) {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
@@ -538,7 +542,7 @@
                     h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
                 }
                 raw = Math.abs(h).toString(36).toUpperCase().padStart(8, '0').slice(0, 8);
-                localStorage.setItem('device_fp', raw);
+                localStorage.setItem(pk('device_fp'), raw);
             }
             return raw.slice(0, 4) + '-' + raw.slice(4, 8);
         }
@@ -573,7 +577,7 @@
             const errEl = document.getElementById('licenseError');
             const correct = makeKey(id);
             if (entered === correct) {
-                localStorage.setItem('fxd_license', entered);
+                localStorage.setItem(pk('fxd_license'), entered);
                 document.getElementById('licenseGate').style.display = 'none';
                 document.body.style.overflow = '';
             } else {
@@ -583,7 +587,7 @@
 
         function checkLicense() {
             const id = getDeviceId();
-            const saved = localStorage.getItem('fxd_license');
+            const saved = localStorage.getItem(pk('fxd_license'));
             if (saved && saved === makeKey(id)) {
                 return true;
             }
@@ -769,7 +773,7 @@
             if (!pair) return alert('Select or enter a pair');
             if (pair.length !== 6) return alert('Pair 6 letters ka hona chahiye, jaise EURUSD ya XAUUSD');
 
-            const apiKey = localStorage.getItem('td_api_key');
+            const apiKey = localStorage.getItem(pk('td_api_key'));
             if (!apiKey) {
                 openSettings();
                 return;
@@ -915,9 +919,9 @@
 
         // Pair-wise SL multiplier - XAUUSD 1.5, crypto 2.0, baaki pairs 2.5
         function getSLMultKey(pair) {
-            if (pair === 'XAUUSD') return 'sl_mult_gold';
-            if (isCrypto(pair)) return 'sl_mult_crypto';
-            return 'sl_mult_forex';
+            if (pair === 'XAUUSD') return pk('sl_mult_gold');
+            if (isCrypto(pair)) return pk('sl_mult_crypto');
+            return pk('sl_mult_forex');
         }
 
         // Signal Quality Score (0-100) - kitna solid setup hai
@@ -986,7 +990,7 @@
         // Entry/SL/TP calculator - MARKET ya LIMIT mode, pair-wise SL multiplier
         function calcZones(signal, price, atr, rrr, pair) {
             const slMult = getSLMult(pair);
-            const isLimit = (localStorage.getItem('entry_mode') || 'LIMIT') === 'LIMIT';
+            const isLimit = (localStorage.getItem(pk('entry_mode')) || 'LIMIT') === 'LIMIT';
             const pullback = isLimit ? atr * 0.5 : 0;
 
             let entry = null, sl = null, tp = null, orderType = null;
@@ -1034,16 +1038,16 @@
         }
 
         function openSettings() {
-            const existing = localStorage.getItem('td_api_key') || '';
+            const existing = localStorage.getItem(pk('td_api_key')) || '';
             const key = prompt('1/2 — TwelveData API Key:', existing);
             if (key !== null && key.trim() !== '') {
-                localStorage.setItem('td_api_key', key.trim());
+                localStorage.setItem(pk('td_api_key'), key.trim());
             }
 
-            const existingFB = localStorage.getItem('fb_url') || '';
+            const existingFB = localStorage.getItem(pk('fb_url')) || '';
             const fb = prompt('2/2 — Firebase URL (MT5 bridge ke liye, khali chhod sakte ho):\n\nExample:\nhttps://myapp-default-rtdb.firebaseio.com', existingFB);
             if (fb !== null) {
-                localStorage.setItem('fb_url', fb.trim().replace(/\/$/, ''));
+                localStorage.setItem(pk('fb_url'), fb.trim().replace(/\/$/, ''));
             }
 
             alert('✅ Settings saved!');
@@ -1055,7 +1059,7 @@
             const a = window.lastAnalysis;
             if (!a || a.signal === 'HOLD') return alert('HOLD signal pe order nahi bhej sakte');
 
-            const fbUrl = localStorage.getItem('fb_url');
+            const fbUrl = localStorage.getItem(pk('fb_url'));
             if (!fbUrl) {
                 alert('Pehle ⚙️ API Settings me Firebase URL daalo');
                 return openSettings();
@@ -1076,7 +1080,7 @@
                 if (tp >= entry) return alert('❌ SELL me TP entry se NEECHE hona chahiye');
             }
 
-            const mode = localStorage.getItem('entry_mode') || 'LIMIT';
+            const mode = localStorage.getItem(pk('entry_mode')) || 'LIMIT';
             const isMarketMode = (mode === 'MARKET');
             let orderType;
             if (isMarketMode) {
@@ -1288,7 +1292,7 @@
 
         // Entry mode toggle - MARKET vs LIMIT
         function setEntryMode(mode) {
-            localStorage.setItem('entry_mode', mode);
+            localStorage.setItem(pk('entry_mode'), mode);
             refreshZones();
         }
 
@@ -1325,7 +1329,7 @@
         }
 
         function highlightModeButtons() {
-            const mode = localStorage.getItem('entry_mode') || 'LIMIT';
+            const mode = localStorage.getItem(pk('entry_mode')) || 'LIMIT';
             const bm = document.getElementById('btnMarket');
             const bl = document.getElementById('btnLimit');
             if (!bm || !bl) return;
@@ -1460,22 +1464,22 @@
                 ...window.lastAnalysis
             };
             
-            const saved = JSON.parse(localStorage.getItem('forexDiagnosis') || '[]');
+            const saved = JSON.parse(localStorage.getItem(pk('forexDiagnosis')) || '[]');
             saved.unshift(data);
             saved.splice(30); // Keep last 30
-            localStorage.setItem('forexDiagnosis', JSON.stringify(saved));
+            localStorage.setItem(pk('forexDiagnosis'), JSON.stringify(saved));
             
             alert('✅ Analysis saved!');
         }
 
         function loadCachedData() {
-            const saved = JSON.parse(localStorage.getItem('forexDiagnosis') || '[]');
+            const saved = JSON.parse(localStorage.getItem(pk('forexDiagnosis')) || '[]');
             // Could display recent analyses here
         }
 
         // ===== Trade Tracker =====
         function getTrades() {
-            return JSON.parse(localStorage.getItem('myTrades') || '[]');
+            return JSON.parse(localStorage.getItem(pk('myTrades')) || '[]');
         }
 
         // P/L in USD based on pair type, lots, and exit price
@@ -1503,7 +1507,7 @@
         }
 
         function saveTrades(trades) {
-            localStorage.setItem('myTrades', JSON.stringify(trades));
+            localStorage.setItem(pk('myTrades'), JSON.stringify(trades));
         }
 
         function recordTrade() {
@@ -1533,7 +1537,7 @@
             if (isNaN(lots) || lots <= 0) return alert('Lot size galat hai - panel me sahi number daalo jaise 0.01');
 
             const trades = getTrades();
-            const mode = localStorage.getItem('entry_mode') || 'LIMIT';
+            const mode = localStorage.getItem(pk('entry_mode')) || 'LIMIT';
             const isMarket = mode === 'MARKET';
             const trade = {
                 id: Date.now(),
@@ -1785,7 +1789,7 @@
             const panel = document.getElementById('fibPanel');
             if (!panel) return;
 
-            const apiKey = localStorage.getItem('td_api_key');
+            const apiKey = localStorage.getItem(pk('td_api_key'));
             if (!apiKey) {
                 panel.innerHTML = '<div style="padding:10px; color:#888; font-size:11px;">API key chahiye - ⚙️ Settings me daalo</div>';
                 return;
@@ -2099,7 +2103,7 @@
             const a = document.createElement('a');
             const dateStr = new Date().toISOString().slice(0, 10);
             a.href = url;
-            a.download = `ForexDiagnosis-Backup-${dateStr}.json`;
+            a.download = `ForexDiagnosis-PRO-Backup-${dateStr}.json`;
             a.click();
             URL.revokeObjectURL(url);
         }
@@ -2132,7 +2136,7 @@
         }
 
         async function checkTradeResults() {
-            const apiKey = localStorage.getItem('td_api_key');
+            const apiKey = localStorage.getItem(pk('td_api_key'));
             if (!apiKey) return openSettings();
 
             const trades = getTrades();
