@@ -514,10 +514,9 @@
 
     <script>
         // ===== LICENSE SYSTEM =====
-        const LICENSE_SECRET = 'ANV-FXD-2026-K7X';   // Owner secret (keygen me same hona chahiye)
+        const LICENSE_SECRET = 'ANV-FXD-2026-K7X';
         const OWNER_WHATSAPP = '919765838383';
 
-        // Stable device fingerprint - same device pe hamesha same ID
         function getDeviceId() {
             let raw = localStorage.getItem('device_fp');
             if (!raw) {
@@ -544,7 +543,6 @@
             return raw.slice(0, 4) + '-' + raw.slice(4, 8);
         }
 
-        // Key generator - device id + secret se deterministic key
         function makeKey(deviceId) {
             const input = deviceId.replace('-', '') + LICENSE_SECRET;
             let h1 = 0x811c9dc5;
@@ -587,9 +585,8 @@
             const id = getDeviceId();
             const saved = localStorage.getItem('fxd_license');
             if (saved && saved === makeKey(id)) {
-                return true; // valid
+                return true;
             }
-            // Show gate
             const gate = document.getElementById('licenseGate');
             document.getElementById('deviceIdBox').textContent = id;
             gate.style.display = 'block';
@@ -597,10 +594,8 @@
             return false;
         }
 
-        // Run license check immediately
         document.addEventListener('DOMContentLoaded', checkLicense);
     </script>
-
     <div class="container">
         <header>
             <h1>🤖 ForexDiagnosis</h1>
@@ -626,6 +621,11 @@
             <button class="tf-btn" data-tf="30min" onclick="setTimeframe('30min', this)">30m</button>
             <button class="tf-btn active" data-tf="1h" onclick="setTimeframe('1h', this)">1H</button>
         </div>
+
+        <button onclick="scanAllPairs()" id="scanBtn" style="width:100%; margin-bottom:16px; padding:14px; background:linear-gradient(135deg,#00CCFF 0%,#0088CC 100%); color:#000; font-weight:700; font-size:14px; font-family:inherit; letter-spacing:1px; border:none; border-radius:8px;">
+            🔍 SCAN ALL PAIRS
+        </button>
+        <div id="scanResults" style="margin-bottom:16px;"></div>
 
         <div class="analysis-grid">
             <div class="feature-card">
@@ -671,10 +671,141 @@
 
     <script>
         const API_KEY = 'demo'; // Use your TwelveData API key
-        const DEFAULT_PAIRS = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'XAUUSD', 'NZDUSD'];
+        const DEFAULT_PAIRS = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'XAUUSD', 'NZDUSD', 'BTCUSD', 'ETHUSD'];
+
+        // Crypto pairs - inke liye decimals aur SL alag honge
+        const CRYPTO_PAIRS = ['BTCUSD', 'ETHUSD', 'BNBUSD', 'SOLUSD', 'XRPUSD', 'ADAUSD', 'DOGEUSD', 'LTCUSD'];
+        function isCrypto(pair) {
+            return CRYPTO_PAIRS.includes(pair.toUpperCase());
+        }
         let selectedPair = null;
         const analysisCache = {}; // { 'PAIR_interval': { analysis, confluence, timestamp } }
         let selectedInterval = '1h';
+        let scanInProgress = false;
+
+        // Scan all pairs - HOLD skip, sirf BUY/SELL full detail me
+        async function scanAllPairs() {
+            if (scanInProgress) return;
+
+            const apiKey = localStorage.getItem('td_api_key');
+            if (!apiKey) { openSettings(); return; }
+
+            scanInProgress = true;
+            const btn = document.getElementById('scanBtn');
+            const resultsDiv = document.getElementById('scanResults');
+            btn.disabled = true;
+            btn.style.opacity = '0.6';
+
+            const pairs = DEFAULT_PAIRS;
+            const found = [];
+            let done = 0;
+
+            for (const pair of pairs) {
+                done++;
+                btn.textContent = `⏳ Scanning ${pair} (${done}/${pairs.length})...`;
+                resultsDiv.innerHTML = renderScanProgress(found, done, pairs.length, pair);
+
+                try {
+                    const symbol = toTDSymbol(pair);
+                    const quote = await tdFetch('quote', symbol, apiKey, selectedInterval);
+                    const livePrice = parseFloat(quote.close);
+
+                    const [analysis, confluence] = await Promise.all([
+                        fetchLiveAnalysis(pair, apiKey, selectedInterval, livePrice),
+                        getMultiTimeframeConfluence(pair, apiKey, livePrice)
+                    ]);
+
+                    // cache bhi kar do taaki tap karne pe instant khule
+                    analysisCache[`${pair}_${selectedInterval}`] = { analysis, confluence, timestamp: Date.now() };
+
+                    if (analysis.signal !== 'HOLD') {
+                        const q = computeQuality(analysis, confluence);
+                        found.push({ pair, analysis, confluence, quality: q });
+                    }
+                } catch (e) {
+                    console.log('Scan failed for', pair, e.message);
+                }
+            }
+
+            // Sort: STRONG pehle, phir quality score ke hisaab se
+            found.sort((a, b) => b.quality.score - a.quality.score);
+
+            btn.textContent = '🔍 SCAN ALL PAIRS';
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            scanInProgress = false;
+
+            resultsDiv.innerHTML = renderScanResults(found);
+        }
+
+        function renderScanProgress(found, done, total, current) {
+            return `<div style="background:#141414; border:1px solid #2a2a2a; border-radius:8px; padding:14px; text-align:center;">
+                <div style="color:#00CCFF; font-size:12px; margin-bottom:8px;">Scanning ${done}/${total}... (${current})</div>
+                <div style="height:6px; background:#222; border-radius:3px; overflow:hidden;">
+                    <div style="height:100%; width:${(done/total*100).toFixed(0)}%; background:#00CCFF;"></div>
+                </div>
+                ${found.length ? `<div style="color:#00FF96; font-size:11px; margin-top:8px;">${found.length} signal(s) mile abhi tak</div>` : ''}
+            </div>`;
+        }
+
+        function renderScanResults(found) {
+            if (found.length === 0) {
+                return `<div style="background:#141414; border:1px solid #2a2a2a; border-radius:8px; padding:16px; text-align:center; color:#888; font-size:12px;">
+                    Koi BUY/SELL signal nahi mila - sab pairs HOLD zone me hain. Baad me phir scan karo.
+                </div>`;
+            }
+
+            const rows = found.map(f => {
+                const a = f.analysis;
+                const q = f.quality;
+                const sigColor = a.signal === 'BUY' ? '#00FF96' : '#FF4444';
+                const bull = f.confluence.filter(c => c.trend === 'BULLISH').length;
+                const bear = f.confluence.filter(c => c.trend === 'BEARISH').length;
+                const total = f.confluence.length;
+                const confTxt = bull > bear ? `${bull}/${total} Bull` : `${bear}/${total} Bear`;
+                return `
+                <div onclick="selectAndAnalyze('${f.pair}')" style="background:#141414; border:1px solid ${q.color}66; border-radius:8px; padding:12px; margin-bottom:8px; cursor:pointer;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <span style="font-weight:700; color:#FFB800; font-size:15px;">${f.pair}</span>
+                        <span style="font-weight:700; color:${sigColor}; font-size:14px;">${a.signal}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:11px; color:#aaa; margin-bottom:6px;">
+                        <span>Entry: ${a.entryZone}</span>
+                        <span>SL: ${a.slZone}</span>
+                        <span>TP: ${a.tpZone}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:10px; color:#888;">${confTxt} · RSI ${a.rsi.toFixed(0)}</span>
+                        <span style="font-size:11px; font-weight:700; color:${q.color};">${q.grade} ${q.score}/100</span>
+                    </div>
+                    <div style="text-align:center; font-size:9px; color:#666; margin-top:6px;">tap for full analysis →</div>
+                </div>`;
+            }).join('');
+
+            const strongCount = found.filter(f => f.quality.grade === 'STRONG').length;
+            return `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <span style="font-size:13px; font-weight:700; color:#00CCFF; letter-spacing:1px;">📋 SCAN RESULTS (${found.length})</span>
+                    <button onclick="clearScan()" style="padding:4px 12px; font-size:10px; background:#141414; color:#888; border:1px solid #2a2a2a; border-radius:6px; font-family:inherit;">✕ CLEAR</button>
+                </div>
+                ${strongCount > 0 ? `<div style="font-size:10px; color:#00FF96; margin-bottom:8px;">🟢 ${strongCount} STRONG setup(s) - best pe focus karo</div>` : ''}
+                ${rows}`;
+        }
+
+        function clearScan() {
+            document.getElementById('scanResults').innerHTML = '';
+        }
+
+        // Scan result tap - cached analysis turant khol do (no extra API call)
+        function selectAndAnalyze(pair) {
+            const cacheKey = `${pair}_${selectedInterval}`;
+            const cached = analysisCache[cacheKey];
+            if (cached) {
+                displayAnalysis(pair, cached.analysis, cached.confluence, cached.timestamp, true);
+            } else {
+                analyzePair(pair);
+            }
+        }
 
         function closeAnalysisPanel() {
             const panel = document.getElementById('analysisPanel');
@@ -851,7 +982,7 @@
 
         async function fetchLiveAnalysis(pair, apiKey, interval, livePrice) {
             const symbol = toTDSymbol(pair);
-            const decimals = pair === 'XAUUSD' ? 2 : (pair === 'USDJPY' ? 3 : 5);
+            const decimals = pair === 'XAUUSD' ? 2 : (pair === 'USDJPY' ? 3 : (isCrypto(pair) ? 2 : 5));
 
             const [rsiData, macdData, supertrendData, atrData] = await Promise.all([
                 tdFetch('rsi', symbol, apiKey, interval, '&time_period=14'),
@@ -891,6 +1022,7 @@
 
             return {
                 signal,
+                pair,
                 orderType: zones.orderType,
                 currentPrice: price.toFixed(decimals),
                 rawPrice: price,
@@ -910,15 +1042,74 @@
             };
         }
 
-        // Pair-wise SL multiplier - XAUUSD 1.5, baaki pairs 2.5 (forex ko wider SL chahiye)
+        // Pair-wise SL multiplier - XAUUSD 1.5, crypto 2.0, baaki pairs 2.5
         function getSLMultKey(pair) {
-            return 'sl_mult_' + (pair === 'XAUUSD' ? 'gold' : 'forex');
+            if (pair === 'XAUUSD') return 'sl_mult_gold';
+            if (isCrypto(pair)) return 'sl_mult_crypto';
+            return 'sl_mult_forex';
+        }
+
+        // Signal Quality Score (0-100) - kitna solid setup hai
+        function computeQuality(analysis, confluence) {
+            if (analysis.signal === 'HOLD') {
+                return { score: 0, grade: 'NO TRADE', color: '#888', reasons: [] };
+            }
+
+            let score = 0;
+            const reasons = [];
+            const isBuy = analysis.signal === 'BUY';
+
+            // 1. Supertrend + MACD agree → 30 pts (signal ka core)
+            const macdBull = analysis.macd === 'BULLISH CROSS';
+            const stMacdAgree = (isBuy && analysis.supertrend === 'BULLISH' && macdBull) ||
+                                (!isBuy && analysis.supertrend === 'BEARISH' && !macdBull);
+            if (stMacdAgree) { score += 30; reasons.push('✓ Supertrend + MACD agree'); }
+            else reasons.push('✗ Supertrend/MACD conflict');
+
+            // 2. Multi-TF confluence → 30 pts (sab timeframes ek direction)
+            const bull = confluence.filter(c => c.trend === 'BULLISH').length;
+            const bear = confluence.filter(c => c.trend === 'BEARISH').length;
+            const total = confluence.length || 1;
+            const aligned = isBuy ? bull : bear;
+            const confPct = aligned / total;
+            if (confPct === 1) { score += 30; reasons.push(`✓ All ${total} timeframes aligned`); }
+            else if (confPct >= 0.75) { score += 20; reasons.push(`✓ ${aligned}/${total} timeframes aligned`); }
+            else if (confPct >= 0.5) { score += 10; reasons.push(`~ ${aligned}/${total} timeframes (mixed)`); }
+            else reasons.push(`✗ Only ${aligned}/${total} timeframes agree`);
+
+            // 3. RSI healthy zone → 20 pts (extremes pe reversal risk)
+            const rsi = analysis.rsi;
+            if (rsi >= 40 && rsi <= 60) { score += 20; reasons.push('✓ RSI neutral zone (safe)'); }
+            else if (rsi > 30 && rsi < 70) { score += 12; reasons.push('~ RSI ok'); }
+            else reasons.push('✗ RSI extreme (reversal risk)');
+
+            // 4. RSI momentum matches signal → 10 pts
+            const rsiMatchesBuy = isBuy && rsi >= 50;
+            const rsiMatchesSell = !isBuy && rsi <= 50;
+            if (rsiMatchesBuy || rsiMatchesSell) { score += 10; reasons.push('✓ RSI momentum matches'); }
+            else reasons.push('✗ RSI momentum against signal');
+
+            // 5. ATR healthy (not dead, not chaos) → 10 pts
+            const atrPct = analysis.rawAtr / analysis.rawPrice;
+            const atrMax = isCrypto(analysis.pair) ? 0.04 : 0.015;  // crypto zyada volatile hota hai
+            if (atrPct >= 0.0005 && atrPct <= atrMax) { score += 10; reasons.push('✓ Volatility healthy'); }
+            else if (atrPct < 0.0005) reasons.push('✗ Too quiet (weak moves)');
+            else reasons.push('✗ Too volatile (risky)');
+
+            let grade, color;
+            if (score >= 80) { grade = 'STRONG'; color = '#00FF96'; }
+            else if (score >= 50) { grade = 'MODERATE'; color = '#FFB800'; }
+            else { grade = 'WEAK'; color = '#FF4444'; }
+
+            return { score, grade, color, reasons };
         }
 
         function getSLMult(pair) {
             const saved = localStorage.getItem(getSLMultKey(pair));
             if (saved !== null) return parseFloat(saved);
-            return pair === 'XAUUSD' ? 1.5 : 2.5;
+            if (pair === 'XAUUSD') return 1.5;
+            if (isCrypto(pair)) return 2.0;
+            return 2.5;
         }
 
         // Entry/SL/TP calculator - MARKET ya LIMIT mode, pair-wise SL multiplier
@@ -1052,6 +1243,27 @@
             const gaugeColor = signalColors[analysis.signal] || signalColors['HOLD'];
             const riskText = analysis.riskScore < 40 ? 'Low Risk' : analysis.riskScore < 70 ? 'Medium Risk' : 'High Risk';
 
+            // Signal quality score
+            const q = computeQuality(analysis, confluence);
+            window.lastQuality = q;
+            const qualityHTML = analysis.signal === 'HOLD' ? '' : `
+                <div style="background:${q.color}15; border:1px solid ${q.color}66; border-radius:10px; padding:12px 14px; margin-bottom:14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <span style="font-size:12px; color:#888; letter-spacing:1px;">SIGNAL QUALITY</span>
+                        <span style="font-size:16px; font-weight:700; color:${q.color};">${q.grade} · ${q.score}/100</span>
+                    </div>
+                    <div style="height:6px; background:#222; border-radius:3px; overflow:hidden; margin-bottom:8px;">
+                        <div style="height:100%; width:${q.score}%; background:${q.color};"></div>
+                    </div>
+                    <div style="font-size:10px; color:#999; line-height:1.7;">
+                        ${q.reasons.map(r => `<div>${r}</div>`).join('')}
+                    </div>
+                    ${q.grade === 'STRONG' ? '<div style="text-align:center; margin-top:8px; font-size:11px; color:#00FF96; font-weight:700;">✅ HIGH PROBABILITY SETUP</div>' :
+                      q.grade === 'WEAK' ? '<div style="text-align:center; margin-top:8px; font-size:11px; color:#FF4444; font-weight:700;">⚠️ WEAK - SKIP KARNA BEHTAR</div>' :
+                      '<div style="text-align:center; margin-top:8px; font-size:11px; color:#FFB800; font-weight:700;">🟡 MODERATE - EXTRA CONFIRMATION LO</div>'}
+                </div>
+            `;
+
             const bullishCount = confluence.filter(c => c.trend === 'BULLISH').length;
             const bearishCount = confluence.filter(c => c.trend === 'BEARISH').length;
             const totalCount = confluence.length;
@@ -1095,6 +1307,8 @@
                         </div>
                     </div>
                 </div>
+
+                ${qualityHTML}
 
                 <div style="text-align:center; font-size:11px; color:#888; margin-bottom:6px;">MULTI-TIMEFRAME TREND</div>
                 ${confluenceHTML}
@@ -1260,6 +1474,7 @@
 
             const toUSD = (diff, refPrice) => {
                 if (a.pair === 'XAUUSD') return diff * 100 * lots;
+                if (isCrypto(a.pair)) return diff * lots;   // 1 lot = 1 coin
                 if (a.pair.endsWith('JPY')) return (diff * 100000 * lots) / refPrice;
                 return diff * 100000 * lots;
             };
@@ -1288,12 +1503,14 @@
                 let distTxt;
                 if (a.pair === 'XAUUSD') {
                     distTxt = '$' + slDist.toFixed(2) + ' move';
+                } else if (isCrypto(a.pair)) {
+                    distTxt = '$' + slDist.toFixed(2) + ' move';
                 } else if (a.pair.endsWith('JPY')) {
                     distTxt = (slDist / 0.01).toFixed(1) + ' pips';
                 } else {
                     distTxt = (slDist / 0.0001).toFixed(1) + ' pips';
                 }
-                const warn = (a.pair !== 'XAUUSD' && slDist / 0.0001 < 15)
+                const warn = (a.pair !== 'XAUUSD' && !isCrypto(a.pair) && slDist / 0.0001 < 15)
                     ? ' ⚠️ tight - spread/noise se hit ho sakta hai'
                     : '';
                 pipDiv.innerHTML = `SL distance: <b style="color:#ccc;">${distTxt}</b>${warn}`;
@@ -1387,6 +1604,8 @@
             let pl;
             if (trade.pair === 'XAUUSD') {
                 pl = diff * 100 * trade.lots; // 1 lot gold = 100 oz
+            } else if (isCrypto(trade.pair)) {
+                pl = diff * trade.lots; // 1 lot = 1 coin
             } else if (trade.pair.endsWith('JPY')) {
                 pl = (diff * 100000 * trade.lots) / exit; // convert JPY P/L to USD
             } else {
@@ -1440,6 +1659,8 @@
                 signal: a.signal,
                 orderType: a.orderType || (a.signal + ' LIMIT'),
                 entryMode: mode,
+                quality: window.lastQuality ? window.lastQuality.grade : null,
+                qualityScore: window.lastQuality ? window.lastQuality.score : null,
                 lots: lots,
                 entry: entry,
                 sl: sl,
@@ -1537,7 +1758,7 @@
                     return `
                     <div style="background:#141414; border:1px solid #2a2a2a; border-radius:8px; padding:12px; margin-bottom:8px;">
                         <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                            <span style="font-weight:700; color:#FFB800;">${t.pair} <span style="color:${sigColor}; font-size:11px;">${t.signal}</span> <span style="color:#888; font-size:10px;">${t.lots ? t.lots + ' lot' : ''}${t.entryMode ? ' · ' + (t.entryMode === 'MARKET' ? '⚡' : '⏳') : ''}</span></span>
+                            <span style="font-weight:700; color:#FFB800;">${t.pair} <span style="color:${sigColor}; font-size:11px;">${t.signal}</span> <span style="color:#888; font-size:10px;">${t.lots ? t.lots + ' lot' : ''}${t.entryMode ? ' · ' + (t.entryMode === 'MARKET' ? '⚡' : '⏳') : ''}${t.quality ? ' · ' + (t.quality === 'STRONG' ? '🟢' : t.quality === 'MODERATE' ? '🟡' : '🔴') : ''}</span></span>
                             ${statusBadge}
                         </div>
                         <div style="display:flex; justify-content:space-between; font-size:11px; color:#aaa;">
@@ -1607,6 +1828,7 @@
 
         function tvSymbol(pair) {
             if (pair === 'XAUUSD') return 'OANDA:XAUUSD';
+            if (isCrypto(pair)) return 'BINANCE:' + pair.replace('USD', 'USDT');
             return 'FX:' + pair;
         }
 
@@ -1710,7 +1932,7 @@
                     low = Math.min(low, parseFloat(c.low));
                 });
 
-                const decimals = chartPair === 'XAUUSD' ? 2 : (chartPair.endsWith('JPY') ? 3 : 5);
+                const decimals = chartPair === 'XAUUSD' ? 2 : (chartPair.endsWith('JPY') ? 3 : (isCrypto(chartPair) ? 2 : 5));
                 const range = high - low;
                 const ratios = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
                 // Uptrend swing (low → high): retracements high se neeche
@@ -1811,6 +2033,35 @@
                 </tr>`;
             }).join('');
 
+            // Quality-wise stats (STRONG vs MODERATE vs WEAK) - proof ki filter kaam karta hai
+            const qMap = { 'STRONG': { total:0,tp:0,sl:0,pl:0 }, 'MODERATE': { total:0,tp:0,sl:0,pl:0 }, 'WEAK': { total:0,tp:0,sl:0,pl:0 } };
+            trades.forEach(t => {
+                const g = t.quality;
+                if (!g || !qMap[g]) return;
+                qMap[g].total++;
+                if (t.result === 'TP HIT') qMap[g].tp++;
+                if (t.result === 'SL HIT') qMap[g].sl++;
+                if (t.status === 'CLOSED') {
+                    const p = t.pl !== undefined && t.pl !== null ? t.pl : calcPL(t);
+                    qMap[g].pl += (p || 0);
+                }
+            });
+            const qColors = { 'STRONG':'#00FF96', 'MODERATE':'#FFB800', 'WEAK':'#FF4444' };
+            const qualityRows = ['STRONG','MODERATE','WEAK'].map(g => {
+                const s = qMap[g];
+                const c = s.tp + s.sl;
+                const acc = c ? ((s.tp / c) * 100).toFixed(0) + '%' : '—';
+                const plCol = s.pl >= 0 ? '#00FF96' : '#FF4444';
+                return `<tr style="border-bottom:1px solid #222;">
+                    <td style="padding:10px 4px; color:${qColors[g]}; font-weight:700;">${g}</td>
+                    <td style="padding:10px 4px; text-align:center; color:#ccc;">${s.total}</td>
+                    <td style="padding:10px 4px; text-align:center; color:#00FF96;">${s.tp}</td>
+                    <td style="padding:10px 4px; text-align:center; color:#FF4444;">${s.sl}</td>
+                    <td style="padding:10px 4px; text-align:center; color:${A};">${acc}</td>
+                    <td style="padding:10px 4px; text-align:center; color:${plCol}; font-weight:700;">${c ? fmtPL(s.pl) : '—'}</td>
+                </tr>`;
+            }).join('');
+
             // Pair-wise stats
             const pairMap = {};
             trades.forEach(t => {
@@ -1898,6 +2149,22 @@
                             <th style="${th}">P/L</th>
                         </tr>
                         ${modeRows}
+                    </table>
+                </div>
+
+                <div style="${box} padding:16px; margin-bottom:14px;">
+                    <div style="font-size:20px; font-weight:700; color:${A}; letter-spacing:3px; margin-bottom:6px;">SIGNAL QUALITY</div>
+                    <div style="font-size:10px; color:#777; margin-bottom:10px;">STRONG signals ka win rate zyada hona chahiye - yehi filter ki value hai</div>
+                    <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                        <tr>
+                            <th style="${th} text-align:left;">GRADE</th>
+                            <th style="${th}">TRADES</th>
+                            <th style="${th}">TP</th>
+                            <th style="${th}">SL</th>
+                            <th style="${th}">ACC%</th>
+                            <th style="${th}">P/L</th>
+                        </tr>
+                        ${qualityRows}
                     </table>
                 </div>
 
