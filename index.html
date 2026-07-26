@@ -622,11 +622,6 @@
             <button class="tf-btn active" data-tf="1h" onclick="setTimeframe('1h', this)">1H</button>
         </div>
 
-        <button onclick="scanAllPairs()" id="scanBtn" style="width:100%; margin-bottom:16px; padding:14px; background:linear-gradient(135deg,#00CCFF 0%,#0088CC 100%); color:#000; font-weight:700; font-size:14px; font-family:inherit; letter-spacing:1px; border:none; border-radius:8px;">
-            🔍 SCAN ALL PAIRS
-        </button>
-        <div id="scanResults" style="margin-bottom:16px;"></div>
-
         <div class="analysis-grid">
             <div class="feature-card">
                 <div class="feature-icon">🤖</div>
@@ -681,131 +676,7 @@
         let selectedPair = null;
         const analysisCache = {}; // { 'PAIR_interval': { analysis, confluence, timestamp } }
         let selectedInterval = '1h';
-        let scanInProgress = false;
 
-        // Scan all pairs - HOLD skip, sirf BUY/SELL full detail me
-        async function scanAllPairs() {
-            if (scanInProgress) return;
-
-            const apiKey = localStorage.getItem('td_api_key');
-            if (!apiKey) { openSettings(); return; }
-
-            scanInProgress = true;
-            const btn = document.getElementById('scanBtn');
-            const resultsDiv = document.getElementById('scanResults');
-            btn.disabled = true;
-            btn.style.opacity = '0.6';
-
-            const pairs = DEFAULT_PAIRS;
-            const found = [];
-            let done = 0;
-
-            for (const pair of pairs) {
-                done++;
-                btn.textContent = `⏳ Scanning ${pair} (${done}/${pairs.length})...`;
-                resultsDiv.innerHTML = renderScanProgress(found, done, pairs.length, pair);
-
-                try {
-                    const symbol = toTDSymbol(pair);
-                    const quote = await tdFetch('quote', symbol, apiKey, selectedInterval);
-                    const livePrice = parseFloat(quote.close);
-
-                    const [analysis, confluence] = await Promise.all([
-                        fetchLiveAnalysis(pair, apiKey, selectedInterval, livePrice),
-                        getMultiTimeframeConfluence(pair, apiKey, livePrice)
-                    ]);
-
-                    // cache bhi kar do taaki tap karne pe instant khule
-                    analysisCache[`${pair}_${selectedInterval}`] = { analysis, confluence, timestamp: Date.now() };
-
-                    if (analysis.signal !== 'HOLD') {
-                        const q = computeQuality(analysis, confluence);
-                        found.push({ pair, analysis, confluence, quality: q });
-                    }
-                } catch (e) {
-                    console.log('Scan failed for', pair, e.message);
-                }
-            }
-
-            // Sort: STRONG pehle, phir quality score ke hisaab se
-            found.sort((a, b) => b.quality.score - a.quality.score);
-
-            btn.textContent = '🔍 SCAN ALL PAIRS';
-            btn.disabled = false;
-            btn.style.opacity = '1';
-            scanInProgress = false;
-
-            resultsDiv.innerHTML = renderScanResults(found);
-        }
-
-        function renderScanProgress(found, done, total, current) {
-            return `<div style="background:#141414; border:1px solid #2a2a2a; border-radius:8px; padding:14px; text-align:center;">
-                <div style="color:#00CCFF; font-size:12px; margin-bottom:8px;">Scanning ${done}/${total}... (${current})</div>
-                <div style="height:6px; background:#222; border-radius:3px; overflow:hidden;">
-                    <div style="height:100%; width:${(done/total*100).toFixed(0)}%; background:#00CCFF;"></div>
-                </div>
-                ${found.length ? `<div style="color:#00FF96; font-size:11px; margin-top:8px;">${found.length} signal(s) mile abhi tak</div>` : ''}
-            </div>`;
-        }
-
-        function renderScanResults(found) {
-            if (found.length === 0) {
-                return `<div style="background:#141414; border:1px solid #2a2a2a; border-radius:8px; padding:16px; text-align:center; color:#888; font-size:12px;">
-                    Koi BUY/SELL signal nahi mila - sab pairs HOLD zone me hain. Baad me phir scan karo.
-                </div>`;
-            }
-
-            const rows = found.map(f => {
-                const a = f.analysis;
-                const q = f.quality;
-                const sigColor = a.signal === 'BUY' ? '#00FF96' : '#FF4444';
-                const bull = f.confluence.filter(c => c.trend === 'BULLISH').length;
-                const bear = f.confluence.filter(c => c.trend === 'BEARISH').length;
-                const total = f.confluence.length;
-                const confTxt = bull > bear ? `${bull}/${total} Bull` : `${bear}/${total} Bear`;
-                return `
-                <div onclick="selectAndAnalyze('${f.pair}')" style="background:#141414; border:1px solid ${q.color}66; border-radius:8px; padding:12px; margin-bottom:8px; cursor:pointer;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                        <span style="font-weight:700; color:#FFB800; font-size:15px;">${f.pair}</span>
-                        <span style="font-weight:700; color:${sigColor}; font-size:14px;">${a.signal}</span>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; font-size:11px; color:#aaa; margin-bottom:6px;">
-                        <span>Entry: ${a.entryZone}</span>
-                        <span>SL: ${a.slZone}</span>
-                        <span>TP: ${a.tpZone}</span>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-size:10px; color:#888;">${confTxt} · RSI ${a.rsi.toFixed(0)}</span>
-                        <span style="font-size:11px; font-weight:700; color:${q.color};">${q.grade} ${q.score}/100</span>
-                    </div>
-                    <div style="text-align:center; font-size:9px; color:#666; margin-top:6px;">tap for full analysis →</div>
-                </div>`;
-            }).join('');
-
-            const strongCount = found.filter(f => f.quality.grade === 'STRONG').length;
-            return `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <span style="font-size:13px; font-weight:700; color:#00CCFF; letter-spacing:1px;">📋 SCAN RESULTS (${found.length})</span>
-                    <button onclick="clearScan()" style="padding:4px 12px; font-size:10px; background:#141414; color:#888; border:1px solid #2a2a2a; border-radius:6px; font-family:inherit;">✕ CLEAR</button>
-                </div>
-                ${strongCount > 0 ? `<div style="font-size:10px; color:#00FF96; margin-bottom:8px;">🟢 ${strongCount} STRONG setup(s) - best pe focus karo</div>` : ''}
-                ${rows}`;
-        }
-
-        function clearScan() {
-            document.getElementById('scanResults').innerHTML = '';
-        }
-
-        // Scan result tap - cached analysis turant khol do (no extra API call)
-        function selectAndAnalyze(pair) {
-            const cacheKey = `${pair}_${selectedInterval}`;
-            const cached = analysisCache[cacheKey];
-            if (cached) {
-                displayAnalysis(pair, cached.analysis, cached.confluence, cached.timestamp, true);
-            } else {
-                analyzePair(pair);
-            }
-        }
 
         function closeAnalysisPanel() {
             const panel = document.getElementById('analysisPanel');
