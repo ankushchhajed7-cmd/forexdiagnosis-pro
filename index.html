@@ -513,12 +513,16 @@
     </div>
 
     <script>
+        // ===== PRO STORAGE NAMESPACE (personal se 100% alag) =====
+        const PRO_NS = 'FXDPRO_v1_';
+        function pk(key) { return PRO_NS + key; }
+
         // ===== LICENSE SYSTEM =====
         const LICENSE_SECRET = 'ANV-FXD-2026-K7X';
         const OWNER_WHATSAPP = '919765838383';
 
         function getDeviceId() {
-            let raw = localStorage.getItem('device_fp');
+            let raw = localStorage.getItem(pk('device_fp'));
             if (!raw) {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
@@ -538,7 +542,7 @@
                     h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
                 }
                 raw = Math.abs(h).toString(36).toUpperCase().padStart(8, '0').slice(0, 8);
-                localStorage.setItem('device_fp', raw);
+                localStorage.setItem(pk('device_fp'), raw);
             }
             return raw.slice(0, 4) + '-' + raw.slice(4, 8);
         }
@@ -573,7 +577,7 @@
             const errEl = document.getElementById('licenseError');
             const correct = makeKey(id);
             if (entered === correct) {
-                localStorage.setItem('fxd_license', entered);
+                localStorage.setItem(pk('fxd_license'), entered);
                 document.getElementById('licenseGate').style.display = 'none';
                 document.body.style.overflow = '';
             } else {
@@ -583,7 +587,7 @@
 
         function checkLicense() {
             const id = getDeviceId();
-            const saved = localStorage.getItem('fxd_license');
+            const saved = localStorage.getItem(pk('fxd_license'));
             if (saved && saved === makeKey(id)) {
                 return true;
             }
@@ -648,12 +652,42 @@
             <span style="display:flex; gap:6px;">
                 <button onclick="openStatsWindow()" style="padding:6px 12px; font-size:11px; background:rgba(255,77,157,0.15); color:#FF4D9D; border:1px solid rgba(255,77,157,0.4);">📊 Stats</button>
                 <button onclick="checkTradeResults()" style="padding:6px 12px; font-size:11px; background:rgba(0,255,150,0.15); color:#00FF96; border:1px solid rgba(0,255,150,0.4);">🔄 Check Results</button>
+                <button id="livePLBtn" onclick="updateLivePL()" style="padding:6px 12px; font-size:11px; background:rgba(0,204,255,0.15); color:#00CCFF; border:1px solid rgba(0,204,255,0.4);">💰 Live P/L</button>
             </span>
         </div>
         <div id="tradeStats" style="display:none; gap:8px; margin-bottom:10px;"></div>
         <div id="tradesList"></div>
 
         <div id="analysisPanel" class="analysis-panel"></div>
+
+        <!-- ===== HELP & DOWNLOADS (Licensed users) ===== -->
+        <div style="margin-top:20px; background:#141414; border:1px solid #2a2a2a; border-radius:12px; padding:16px;">
+            <div style="font-size:15px; font-weight:700; color:#FF4D9D; letter-spacing:1px; margin-bottom:4px;">📥 SETUP &amp; DOWNLOADS</div>
+            <div style="font-size:10px; color:#888; margin-bottom:14px;">Auto-trading setup ke liye EA aur guide download karo</div>
+
+            <a href="https://github.com/ankushchhajed7-cmd/forexdiagnosis-pro/raw/main/FXBridgeEA.ex5" download="FXBridgeEA.ex5" style="display:block; text-decoration:none; margin-bottom:10px;">
+                <div style="background:linear-gradient(135deg,#FF4D9D 0%,#C9327D 100%); color:#000; padding:14px; border-radius:8px; font-weight:700; font-size:13px; text-align:center;">
+                    🤖 Download FXBridge EA (.ex5)
+                </div>
+            </a>
+
+            <a href="https://github.com/ankushchhajed7-cmd/forexdiagnosis-pro/raw/main/ForexDiagnosis-Guide.pdf" download="ForexDiagnosis-Guide.pdf" style="display:block; text-decoration:none; margin-bottom:10px;">
+                <div style="background:#1f1f1f; border:1px solid #FF4D9D66; color:#FF4D9D; padding:14px; border-radius:8px; font-weight:700; font-size:13px; text-align:center;">
+                    📖 Setup Guide PDF (Hindi + English)
+                </div>
+            </a>
+
+            <a href="https://wa.me/919765838383?text=Hi!%20ForexDiagnosis%20setup%20me%20help%20chahiye" target="_blank" style="display:block; text-decoration:none;">
+                <div style="background:linear-gradient(135deg,#25D366 0%,#20BA5C 100%); color:#000; padding:14px; border-radius:8px; font-weight:700; font-size:13px; text-align:center;">
+                    💬 Setup Help chahiye? WhatsApp karo
+                </div>
+            </a>
+
+            <div style="font-size:9px; color:#666; margin-top:12px; line-height:1.6; text-align:center;">
+                EA sirf auto-trading ke liye hai. Sirf signals chahiye to iski zaroorat nahi.<br>
+                Setup me Firebase + VPS/MT5 chahiye - guide PDF me sab steps hain.
+            </div>
+        </div>
 
         <div id="statsWindow" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#0d0d0d; z-index:1100; overflow-y:auto; font-family:'Courier New', monospace; padding:16px; padding-top:54px;"></div>
         <div id="chartWindow" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#0a0e27; z-index:1200; flex-direction:column;"></div>
@@ -769,7 +803,7 @@
             if (!pair) return alert('Select or enter a pair');
             if (pair.length !== 6) return alert('Pair 6 letters ka hona chahiye, jaise EURUSD ya XAUUSD');
 
-            const apiKey = localStorage.getItem('pro_td_api_key');
+            const apiKey = localStorage.getItem(pk('td_api_key'));
             if (!apiKey) {
                 openSettings();
                 return;
@@ -915,9 +949,9 @@
 
         // Pair-wise SL multiplier - XAUUSD 1.5, crypto 2.0, baaki pairs 2.5
         function getSLMultKey(pair) {
-            if (pair === 'XAUUSD') return 'pro_sl_mult_gold';
-            if (isCrypto(pair)) return 'pro_sl_mult_crypto';
-            return 'pro_sl_mult_forex';
+            if (pair === 'XAUUSD') return pk('sl_mult_gold');
+            if (isCrypto(pair)) return pk('sl_mult_crypto');
+            return pk('sl_mult_forex');
         }
 
         // Signal Quality Score (0-100) - kitna solid setup hai
@@ -986,7 +1020,7 @@
         // Entry/SL/TP calculator - MARKET ya LIMIT mode, pair-wise SL multiplier
         function calcZones(signal, price, atr, rrr, pair) {
             const slMult = getSLMult(pair);
-            const isLimit = (localStorage.getItem('pro_entry_mode') || 'LIMIT') === 'LIMIT';
+            const isLimit = (localStorage.getItem(pk('entry_mode')) || 'LIMIT') === 'LIMIT';
             const pullback = isLimit ? atr * 0.5 : 0;
 
             let entry = null, sl = null, tp = null, orderType = null;
@@ -1034,16 +1068,16 @@
         }
 
         function openSettings() {
-            const existing = localStorage.getItem('pro_td_api_key') || '';
+            const existing = localStorage.getItem(pk('td_api_key')) || '';
             const key = prompt('1/2 — TwelveData API Key:', existing);
             if (key !== null && key.trim() !== '') {
-                localStorage.setItem('pro_td_api_key', key.trim());
+                localStorage.setItem(pk('td_api_key'), key.trim());
             }
 
-            const existingFB = localStorage.getItem('pro_fb_url') || '';
+            const existingFB = localStorage.getItem(pk('fb_url')) || '';
             const fb = prompt('2/2 — Firebase URL (MT5 bridge ke liye, khali chhod sakte ho):\n\nExample:\nhttps://myapp-default-rtdb.firebaseio.com', existingFB);
             if (fb !== null) {
-                localStorage.setItem('pro_fb_url', fb.trim().replace(/\/$/, ''));
+                localStorage.setItem(pk('fb_url'), fb.trim().replace(/\/$/, ''));
             }
 
             alert('✅ Settings saved!');
@@ -1055,7 +1089,7 @@
             const a = window.lastAnalysis;
             if (!a || a.signal === 'HOLD') return alert('HOLD signal pe order nahi bhej sakte');
 
-            const fbUrl = localStorage.getItem('pro_fb_url');
+            const fbUrl = localStorage.getItem(pk('fb_url'));
             if (!fbUrl) {
                 alert('Pehle ⚙️ API Settings me Firebase URL daalo');
                 return openSettings();
@@ -1076,7 +1110,7 @@
                 if (tp >= entry) return alert('❌ SELL me TP entry se NEECHE hona chahiye');
             }
 
-            const mode = localStorage.getItem('pro_entry_mode') || 'LIMIT';
+            const mode = localStorage.getItem(pk('entry_mode')) || 'LIMIT';
             const isMarketMode = (mode === 'MARKET');
             let orderType;
             if (isMarketMode) {
@@ -1241,7 +1275,7 @@
                     </div>
                     <div class="analysis-row">
                         <span class="analysis-label">💼 Lot Size ✏️</span>
-                        <input type="number" step="0.01" min="0.01" id="editLots" value="0.01" oninput="updateDollarValues()" style="width:110px; padding:6px 8px; background:rgba(255,255,255,0.06); border:1px solid #333; color:#e0e0e0; border-radius:6px; font-size:13px; font-weight:600; text-align:right; font-family:inherit;">
+                        <input type="number" step="0.01" min="0.01" id="editLots" value="${isCrypto(pair) ? '0.10' : '0.01'}" oninput="updateDollarValues()" style="width:110px; padding:6px 8px; background:rgba(255,255,255,0.06); border:1px solid #333; color:#e0e0e0; border-radius:6px; font-size:13px; font-weight:600; text-align:right; font-family:inherit;">
                     </div>
                     <div class="analysis-row">
                         <span class="analysis-label">📍 Entry ✏️</span>
@@ -1288,7 +1322,7 @@
 
         // Entry mode toggle - MARKET vs LIMIT
         function setEntryMode(mode) {
-            localStorage.setItem('pro_entry_mode', mode);
+            localStorage.setItem(pk('entry_mode'), mode);
             refreshZones();
         }
 
@@ -1325,7 +1359,7 @@
         }
 
         function highlightModeButtons() {
-            const mode = localStorage.getItem('pro_entry_mode') || 'LIMIT';
+            const mode = localStorage.getItem(pk('entry_mode')) || 'LIMIT';
             const bm = document.getElementById('btnMarket');
             const bl = document.getElementById('btnLimit');
             if (!bm || !bl) return;
@@ -1460,22 +1494,22 @@
                 ...window.lastAnalysis
             };
             
-            const saved = JSON.parse(localStorage.getItem('pro_forexDiagnosis') || '[]');
+            const saved = JSON.parse(localStorage.getItem(pk('forexDiagnosis')) || '[]');
             saved.unshift(data);
             saved.splice(30); // Keep last 30
-            localStorage.setItem('pro_forexDiagnosis', JSON.stringify(saved));
+            localStorage.setItem(pk('forexDiagnosis'), JSON.stringify(saved));
             
             alert('✅ Analysis saved!');
         }
 
         function loadCachedData() {
-            const saved = JSON.parse(localStorage.getItem('pro_forexDiagnosis') || '[]');
+            const saved = JSON.parse(localStorage.getItem(pk('forexDiagnosis')) || '[]');
             // Could display recent analyses here
         }
 
         // ===== Trade Tracker =====
         function getTrades() {
-            return JSON.parse(localStorage.getItem('pro_myTrades') || '[]');
+            return JSON.parse(localStorage.getItem(pk('myTrades')) || '[]');
         }
 
         // P/L in USD based on pair type, lots, and exit price
@@ -1503,7 +1537,7 @@
         }
 
         function saveTrades(trades) {
-            localStorage.setItem('pro_myTrades', JSON.stringify(trades));
+            localStorage.setItem(pk('myTrades'), JSON.stringify(trades));
         }
 
         function recordTrade() {
@@ -1533,7 +1567,7 @@
             if (isNaN(lots) || lots <= 0) return alert('Lot size galat hai - panel me sahi number daalo jaise 0.01');
 
             const trades = getTrades();
-            const mode = localStorage.getItem('pro_entry_mode') || 'LIMIT';
+            const mode = localStorage.getItem(pk('entry_mode')) || 'LIMIT';
             const isMarket = mode === 'MARKET';
             const trade = {
                 id: Date.now(),
@@ -1633,10 +1667,18 @@
                             ? '<span style="color:#00FF96; font-weight:700;">✅ TP HIT</span>'
                             : '<span style="color:#FF4444; font-weight:700;">❌ SL HIT</span>';
                     const sigColor = t.signal === 'BUY' ? '#00FF96' : '#FF4444';
-                    const tradePL = t.pl !== undefined && t.pl !== null ? t.pl : calcPL(t);
-                    const plBadge = tradePL !== null
-                        ? `<span style="font-weight:700; color:${tradePL >= 0 ? '#00FF96' : '#FF4444'};">${fmtPL(tradePL)}</span>`
-                        : '';
+                    const isRunning = t.status === 'OPEN' && t.filled;
+                    const livePLVal = (window.livePL && window.livePL[t.id] !== undefined) ? window.livePL[t.id] : null;
+                    let plBadge = '';
+                    if (isRunning && livePLVal !== null) {
+                        // Live P/L for running trade
+                        plBadge = `<span style="font-weight:700; color:${livePLVal >= 0 ? '#00FF96' : '#FF4444'};">${fmtPL(livePLVal)} <span style="font-size:8px; color:#00CCFF;">LIVE</span></span>`;
+                    } else {
+                        const tradePL = t.pl !== undefined && t.pl !== null ? t.pl : calcPL(t);
+                        plBadge = tradePL !== null
+                            ? `<span style="font-weight:700; color:${tradePL >= 0 ? '#00FF96' : '#FF4444'};">${fmtPL(tradePL)}</span>`
+                            : '';
+                    }
                     return `
                     <div style="background:#141414; border:1px solid #2a2a2a; border-radius:8px; padding:12px; margin-bottom:8px;">
                         <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
@@ -1785,7 +1827,7 @@
             const panel = document.getElementById('fibPanel');
             if (!panel) return;
 
-            const apiKey = localStorage.getItem('pro_td_api_key');
+            const apiKey = localStorage.getItem(pk('td_api_key'));
             if (!apiKey) {
                 panel.innerHTML = '<div style="padding:10px; color:#888; font-size:11px;">API key chahiye - ⚙️ Settings me daalo</div>';
                 return;
@@ -2131,8 +2173,47 @@
             reader.readAsText(file);
         }
 
+        // Live P/L - running trades ka current profit/loss (button dabane pe)
+        window.livePL = {};  // { tradeId: plValue }
+        async function updateLivePL() {
+            const apiKey = localStorage.getItem(pk('td_api_key'));
+            if (!apiKey) { openSettings(); return; }
+            const trades = getTrades();
+            const running = trades.filter(t => t.status === 'OPEN' && t.filled);
+            if (running.length === 0) { alert('Koi running trade nahi hai.'); return; }
+
+            const btn = document.getElementById('livePLBtn');
+            if (btn) { btn.textContent = '⏳ Updating...'; btn.disabled = true; }
+
+            // Unique pairs - ek pair ka ek hi call (API bachao)
+            const pairs = [...new Set(running.map(t => t.pair))];
+            const prices = {};
+            for (const pair of pairs) {
+                try {
+                    const q = await tdFetch('quote', toTDSymbol(pair), apiKey, '1min');
+                    prices[pair] = parseFloat(q.close);
+                } catch (e) { console.log('price fail', pair); }
+            }
+
+            // Har running trade ka live P/L calculate
+            for (const t of running) {
+                const cur = prices[t.pair];
+                if (!cur || !t.lots) continue;
+                const diff = t.signal === 'BUY' ? (cur - t.entry) : (t.entry - cur);
+                let pl;
+                if (t.pair === 'XAUUSD') pl = diff * 100 * t.lots;
+                else if (isCrypto(t.pair)) pl = diff * t.lots;
+                else if (t.pair.endsWith('JPY')) pl = (diff * 100000 * t.lots) / cur;
+                else pl = diff * 100000 * t.lots;
+                window.livePL[t.id] = pl;
+            }
+
+            if (btn) { btn.textContent = '💰 Live P/L'; btn.disabled = false; }
+            renderTrades();
+        }
+
         async function checkTradeResults() {
-            const apiKey = localStorage.getItem('pro_td_api_key');
+            const apiKey = localStorage.getItem(pk('td_api_key'));
             if (!apiKey) return openSettings();
 
             const trades = getTrades();
