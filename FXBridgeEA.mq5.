@@ -11,12 +11,13 @@
 //|                "tp":3970.06}                                     |
 //+------------------------------------------------------------------+
 #property copyright "Ankush New Vision"
-#property version   "2.16"
+#property version   "3.00"
 #property strict
 
 #include <Trade\Trade.mqh>
 
 //--- Inputs
+input string  ActivationKey  = "";         // Activation Key (owner se lo - account-locked)
 input string  FirebaseURL    = "https://forexdiagnosis-default-rtdb.asia-southeast1.firebasedatabase.app";  // Firebase URL (pehle se bhara hua)
 input string  SymbolSuffix   = "m";        // Broker suffix (Exness = "m")
 input int     PollSeconds    = 10;         // Firebase check interval (seconds)
@@ -31,9 +32,81 @@ input string  TgChatID       = "";         // Telegram Chat ID (optional)
 CTrade   trade;
 long     lastOrderID = 0;
 
+//--- EA LICENSE (account-locked) ---
+#define EA_SECRET "ANV-FXBRIDGE-2026-Q9Z"   // Owner secret (keygen me SAME)
+
+// Account number se deterministic key banao (keygen se match hona chahiye)
+string MakeEAKey(long account)
+{
+   string input = IntegerToString(account) + EA_SECRET;
+   uint h1 = 2166136261;
+   for(int i = 0; i < StringLen(input); i++)
+   {
+      h1 ^= (uint)StringGetCharacter(input, i);
+      h1 *= 16777619;
+   }
+   uint h2 = 19088743;
+   for(int i = StringLen(input) - 1; i >= 0; i--)
+   {
+      h2 ^= (uint)StringGetCharacter(input, i);
+      h2 *= 2246822519;
+   }
+   // 3 blocks of base36-ish (A-Z0-9)
+   string chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+   string key = "";
+   uint vals[3];
+   vals[0] = h1 % 1679616;          // 36^4
+   vals[1] = h2 % 1679616;
+   vals[2] = (h1 ^ h2) % 1679616;
+   for(int b = 0; b < 3; b++)
+   {
+      uint v = vals[b];
+      string block = "";
+      for(int c = 0; c < 4; c++)
+      {
+         block = StringSubstr(chars, (int)(v % 36), 1) + block;
+         v /= 36;
+      }
+      key += (b > 0 ? "-" : "") + block;
+   }
+   return key;
+}
+
+bool VerifyLicense()
+{
+   long account = AccountInfoInteger(ACCOUNT_LOGIN);
+   string expected = MakeEAKey(account);
+   string entered = ActivationKey;
+   StringToUpper(entered);
+   StringTrimLeft(entered);
+   StringTrimRight(entered);
+   return (entered == expected);
+}
+
 //+------------------------------------------------------------------+
 int OnInit()
 {
+   // ===== LICENSE CHECK - EA sirf authorized account pe chale =====
+   long account = AccountInfoInteger(ACCOUNT_LOGIN);
+   if(!VerifyLicense())
+   {
+      Print("========================================");
+      Print("  FXBRIDGE EA - LICENSE REQUIRED");
+      Print("  Ye account: ", account);
+      Print("  Is account ke liye Activation Key chahiye.");
+      Print("  Owner ko ye account number bhejo:");
+      Print("  >>> ", account, " <<<");
+      Print("  Key milne pe EA settings me ActivationKey me daalo.");
+      Print("  WhatsApp: +91 97658 38383");
+      Print("========================================");
+      Alert("FXBridge EA: Account ", account, " ke liye Activation Key chahiye. Owner ko account number bhejo: ", account);
+      Comment("\n\n  FXBRIDGE EA - LOCKED\n\n  Account: " + IntegerToString(account) +
+              "\n\n  Ye account number owner ko bhejo,\n  Activation Key le kar settings me daalo.\n\n  WhatsApp: +91 97658 38383");
+      return(INIT_FAILED);
+   }
+   Comment("");  // clear
+   Print("License OK - Account ", account, " authorized ✓");
+
    if(StringLen(FirebaseURL) < 10)
    {
       Print("ERROR: FirebaseURL khali hai - EA settings me daalo");
