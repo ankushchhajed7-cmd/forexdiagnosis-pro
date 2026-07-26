@@ -1,0 +1,469 @@
+//+------------------------------------------------------------------+
+//|                                                 FXBridgeEA.mq5   |
+//|              Firebase Bridge for ForexDiagnosis PWA              |
+//|                                                                  |
+//|  App Firebase pe order likhta hai, ye EA usse padh kar MT5 me    |
+//|  pending order place karta hai.                                  |
+//|                                                                  |
+//|  Firebase path:  <FirebaseURL>/fxbridge/order.json               |
+//|  JSON format: {"id":123,"pair":"XAUUSD","type":"SELLLIMIT",      |
+//|                "lots":0.01,"entry":4022.36,"sl":4048.51,         |
+//|                "tp":3970.06}                                     |
+//+------------------------------------------------------------------+
+#property copyright "Ankush New Vision"
+#property version   "2.16"
+#property strict
+
+#include <Trade\Trade.mqh>
+
+//--- Inputs
+input string  FirebaseURL    = "https://forexdiagnosis-default-rtdb.asia-southeast1.firebasedatabase.app";  // Firebase URL (pehle se bhara hua)
+input string  SymbolSuffix   = "m";        // Broker suffix (Exness = "m")
+input int     PollSeconds    = 10;         // Firebase check interval (seconds)
+input double  MaxLots        = 0.50;       // Safety: max lot allowed per order
+input int     MagicNumber    = 777001;     // Magic number
+input int     ExpiryHours    = 24;         // Pending order expiry (0 = no expiry)
+input bool    EnableTrading  = false;      // Master switch (false = read-only test)
+input string  TgBotToken     = "";         // Telegram Bot Token (confirmation, optional)
+input string  TgChatID       = "";         // Telegram Chat ID (optional)
+
+//--- Globals
+CTrade   trade;
+long     lastOrderID = 0;
+
+//+------------------------------------------------------------------+
+int OnInit()
+{
+   if(StringLen(FirebaseURL) < 10)
+   {
+      Print("ERROR: FirebaseURL khali hai - EA settings me daalo");
+      return(INIT_PARAMETERS_INCORRECT);
+   }
+
+   trade.SetExpertMagicNumber(MagicNumber);
+   trade.SetDeviationInPoints(20);
+
+   // VPS restart ke baad duplicate order avoid
+   lastOrderID = (long)GlobalVariableGet("FXBridge_LastOrderID");
+
+   Print("=== FXBridge EA v2.00 (Firebase) Started ===");
+   Print("URL: ", FirebaseURL);
+   Print("Poll: ", PollSeconds, "s | Suffix: '", SymbolSuffix, "' | Trading: ", EnableTrading);
+   Print("Last processed order ID: ", lastOrderID);
+   Print(">>> ZAROORI: Tools > Options > Expert Advisors me ye URL allow karo:");
+   Print("    ", FirebaseURL);
+   if(StringLen(TgBotToken) > 10) Print("    https://api.telegram.org");
+
+   EventSetTimer(PollSeconds);
+   return(INIT_SUCCEEDED);
+}
+
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+{
+   EventKillTimer();
+   GlobalVariableSet("FXBridge_LastOrderID", (double)lastOrderID);
+   Print("=== FXBridge EA Stopped ===");
+}
+
+//+------------------------------------------------------------------+
+void OnTimer()
+{
+   CheckFirebase();
+}
+
+//+------------------------------------------------------------------+
+//| Firebase se latest order padho                                    |
+//+------------------------------------------------------------------+
+void CheckFirebase()
+{
+   string url = FirebaseURL + "/fxbridge/order.json";
+
+   char   post[], result[];
+   string headers = "";
+   string resultHeaders;
+
+   ResetLastError();
+   int res = WebRequest("GET", url, headers, 5000, post, result, resultHeaders);
+
+   if(res == -1)
+   {
+      int err = GetLastError();
+      if(err == 4060)
+         Print("ERROR 4060: '", FirebaseURL, "' allowed URLs me add nahi hai! Tools > Options > Expert Advisors");
+      else
+         Print("WebRequest failed, error: ", err);
+      return;
+   }
+
+   if(res != 200)
+   {
+      Print("Firebase HTTP ", res);
+      return;
+   }
+
+   string json = CharArrayToString(result, 0, WHOLE_ARRAY, CP_UTF8);
+
+   // Khali path pe Firebase "null" deta hai
+   if(StringFind(json, "null") == 0 || StringLen(json) < 10)
+      return;
+
+   ProcessOrder(json);
+}
+
+//+------------------------------------------------------------------+
+//| JSON se number nikalo:  "key":123.45                              |
+//+------------------------------------------------------------------+
+double JsonNumber(string json, string key)
+{
+   string tag = "\"" + key + "\":";
+   int pos = StringFind(json, tag);
+   if(pos < 0) return(0);
+
+   int start = pos + StringLen(tag);
+   int len = StringLen(json);
+
+   while(start < len && StringGetCharacter(json, start) == ' ') start++;
+
+   int end = start;
+   while(end < len)
+   {
+      ushort c = StringGetCharacter(json, end);
+      if((c >= '0' && c <= '9') || c == '.' || c == '-' || c == '+' || c == 'e' || c == 'E')
+         end++;
+      else
+         break;
+   }
+   if(end <= start) return(0);
+   return(StringToDouble(StringSubstr(json, start, end - start)));
+}
+
+//+------------------------------------------------------------------+
+//| JSON se string nikalo:  "key":"value"                             |
+//+------------------------------------------------------------------+
+string JsonString(string json, string key)
+{
+   string tag = "\"" + key + "\":\"";
+   int pos = StringFind(json, tag);
+   if(pos < 0) return("");
+
+   int start = pos + StringLen(tag);
+   int end = StringFind(json, "\"", start);
+   if(end <= start) return("");
+   return(StringSubstr(json, start, end - start));
+}
+
+//+------------------------------------------------------------------+
+//| Order parse karke place karo                                      |
+//+------------------------------------------------------------------+
+void ProcessOrder(string json)
+{
+   long   orderID = (long)JsonNumber(json, "id");
+   string pair    = JsonString(json, "pair");
+   string type    = JsonString(json, "type");
+   double lots    = JsonNumber(json, "lots");
+   double entry   = JsonNumber(json, "entry");
+   double sl      = JsonNumber(json, "sl");
+   double tp      = JsonNumber(json, "tp");
+
+   if(orderID <= 0 || pair == "" || type == "")
+   {
+      Print("Invalid JSON: ", json);
+      return;
+   }
+
+   // Duplicate guard - same order dobara place nahi hoga
+   if(orderID <= lastOrderID)
+      return;
+
+   // Extra guard - agar is orderID ka order/position MT5 me pehle se hai to skip
+   string checkComment = "FXDiag_" + IntegerToString(orderID);
+   if(OrderExistsForThisID(checkComment) || PositionExistsForThisID(checkComment))
+   {
+      Print("Order ID ", orderID, " already exists in MT5 - skip (duplicate)");
+      lastOrderID = orderID;
+      GlobalVariableSet("FXBridge_LastOrderID", (double)lastOrderID);
+      return;
+   }
+
+   Print("--- Naya order mila: ID ", orderID, " ---");
+
+   if(entry <= 0 || sl <= 0 || tp <= 0)
+   {
+      Print("REJECTED: invalid prices  E=", entry, " SL=", sl, " TP=", tp);
+      lastOrderID = orderID;
+      GlobalVariableSet("FXBridge_LastOrderID", (double)lastOrderID);
+      return;
+   }
+
+   string symbol = pair + SymbolSuffix;
+   if(!SymbolSelect(symbol, true))
+   {
+      Print("REJECTED: symbol ", symbol, " not found");
+      SendReply("REJECTED: symbol " + symbol + " not found");
+      lastOrderID = orderID;
+      GlobalVariableSet("FXBridge_LastOrderID", (double)lastOrderID);
+      return;
+   }
+
+   // ===== AUTO-ADJUST: symbol ke rules ke hisaab se lot aur price fix karo =====
+   int    digits    = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
+   double minLot    = SymbolInfoDouble(symbol, SYMBOL_VOLUME_MIN);
+   double maxLot    = SymbolInfoDouble(symbol, SYMBOL_VOLUME_MAX);
+   double lotStep   = SymbolInfoDouble(symbol, SYMBOL_VOLUME_STEP);
+   double tickSize  = SymbolInfoDouble(symbol, SYMBOL_TRADE_TICK_SIZE);
+   long   stopsLvl  = SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL);
+   double point     = SymbolInfoDouble(symbol, SYMBOL_POINT);
+
+   // --- Lot size adjust: step me round karo, min/max ke andar rakho ---
+   double origLots = lots;
+   if(lotStep > 0)
+      lots = MathRound(lots / lotStep) * lotStep;
+   if(lots < minLot) lots = minLot;
+   if(lots > maxLot) lots = maxLot;
+   lots = NormalizeDouble(lots, 2);
+
+   // MaxLots safety (user ka apna cap)
+   if(lots > MaxLots)
+   {
+      Print("REJECTED: adjusted lot ", lots, " > MaxLots ", MaxLots);
+      SendReply("REJECTED: lot " + DoubleToString(lots, 2) + " > MaxLots " + DoubleToString(MaxLots, 2) +
+                "\n(" + symbol + " ka min lot " + DoubleToString(minLot,2) + " hai - MaxLots badhao)");
+      lastOrderID = orderID;
+      GlobalVariableSet("FXBridge_LastOrderID", (double)lastOrderID);
+      return;
+   }
+
+   if(origLots != lots)
+      Print("Lot adjusted: ", origLots, " -> ", lots, " (min=", minLot, " step=", lotStep, ")");
+
+   // --- Price adjust: tick size me round karo ---
+   if(tickSize > 0)
+   {
+      entry = MathRound(entry / tickSize) * tickSize;
+      sl    = MathRound(sl / tickSize) * tickSize;
+      tp    = MathRound(tp / tickSize) * tickSize;
+   }
+   entry = NormalizeDouble(entry, digits);
+   sl    = NormalizeDouble(sl, digits);
+   tp    = NormalizeDouble(tp, digits);
+
+   // --- Entry price current market se valid distance pe honi chahiye ---
+   // (Buy Limit current se NEECHE, Sell Limit UPAR - warna "invalid price")
+   double ask = SymbolInfoDouble(symbol, SYMBOL_ASK);
+   double bid = SymbolInfoDouble(symbol, SYMBOL_BID);
+   double minStop = (stopsLvl > 0 ? stopsLvl : 10) * point;
+   // thoda extra buffer taaki fast-moving pairs (crypto) me bhi valid rahe
+   double buffer = MathMax(minStop, (ask - bid) * 3);
+   if(buffer <= 0) buffer = 10 * point;
+
+   bool isMarketOrder = (type == "BUYMARKET" || type == "SELLMARKET");
+
+   if(type == "BUYLIMIT")
+   {
+      // Buy Limit ask se neeche hona chahiye
+      if(entry >= ask - buffer)
+      {
+         entry = NormalizeDouble(ask - buffer, digits);
+         Print("BuyLimit entry adjusted below market: ", entry);
+      }
+   }
+   else if(type == "SELLLIMIT")
+   {
+      // Sell Limit bid se upar hona chahiye
+      if(entry <= bid + buffer)
+      {
+         entry = NormalizeDouble(bid + buffer, digits);
+         Print("SellLimit entry adjusted above market: ", entry);
+      }
+   }
+   else if(type == "BUYSTOP")
+   {
+      if(entry <= ask + buffer)
+      {
+         entry = NormalizeDouble(ask + buffer, digits);
+         Print("BuyStop entry adjusted above market: ", entry);
+      }
+   }
+   else if(type == "SELLSTOP")
+   {
+      if(entry >= bid - buffer)
+      {
+         entry = NormalizeDouble(bid - buffer, digits);
+         Print("SellStop entry adjusted below market: ", entry);
+      }
+   }
+
+   // --- Stops level check: SL/TP entry se kaafi door hone chahiye ---
+   double minDist = stopsLvl * point;
+   // Market order me reference current price hai, limit me entry
+   double refPrice = isMarketOrder ? (type == "BUYMARKET" ? ask : bid) : entry;
+   if(minDist > 0)
+   {
+      bool isBuy = (type == "BUYLIMIT" || type == "BUYSTOP" || type == "BUYMARKET");
+      // SL refPrice se minDist door
+      if(MathAbs(refPrice - sl) < minDist)
+      {
+         sl = isBuy ? (refPrice - minDist) : (refPrice + minDist);
+         sl = NormalizeDouble(sl, digits);
+         Print("SL adjusted to respect stops level (", stopsLvl, " points)");
+      }
+      // TP refPrice se minDist door
+      if(MathAbs(tp - refPrice) < minDist)
+      {
+         tp = isBuy ? (refPrice + minDist) : (refPrice - minDist);
+         tp = NormalizeDouble(tp, digits);
+         Print("TP adjusted to respect stops level (", stopsLvl, " points)");
+      }
+   }
+
+   // Mark processed pehle hi (crash pe duplicate na ho)
+   lastOrderID = orderID;
+   GlobalVariableSet("FXBridge_LastOrderID", (double)lastOrderID);
+
+   if(!EnableTrading)
+   {
+      Print("TEST MODE - would place: ", symbol, " ", type, " ", lots, " @ ", entry, " SL=", sl, " TP=", tp);
+      SendReply("TEST MODE (EnableTrading=false)\n" + symbol + " " + type +
+                "\nLots: " + DoubleToString(lots, 2) +
+                "\nEntry: " + DoubleToString(entry, digits) +
+                "\nSL: " + DoubleToString(sl, digits) +
+                "\nTP: " + DoubleToString(tp, digits));
+      return;
+   }
+
+   datetime expiry = (ExpiryHours > 0) ? TimeCurrent() + ExpiryHours * 3600 : 0;
+   ENUM_ORDER_TYPE_TIME timeType = (ExpiryHours > 0) ? ORDER_TIME_SPECIFIED : ORDER_TIME_GTC;
+   trade.SetTypeFillingBySymbol(symbol);
+
+   string comment = "FXDiag_" + IntegerToString(orderID);
+   bool ok = false;
+   int rc = 0;
+
+   // SIRF EK BAAR place karo - retry NAHI (retry se duplicate ban jate the)
+   if(type == "BUYLIMIT")
+      ok = trade.BuyLimit(lots, entry, symbol, sl, tp, timeType, expiry, comment);
+   else if(type == "SELLLIMIT")
+      ok = trade.SellLimit(lots, entry, symbol, sl, tp, timeType, expiry, comment);
+   else if(type == "BUYSTOP")
+      ok = trade.BuyStop(lots, entry, symbol, sl, tp, timeType, expiry, comment);
+   else if(type == "SELLSTOP")
+      ok = trade.SellStop(lots, entry, symbol, sl, tp, timeType, expiry, comment);
+   else if(type == "BUYMARKET")
+      ok = trade.Buy(lots, symbol, 0.0, sl, tp, comment);
+   else if(type == "SELLMARKET")
+      ok = trade.Sell(lots, symbol, 0.0, sl, tp, comment);
+   else
+   {
+      Print("Unknown order type: ", type);
+      return;
+   }
+
+   rc = (int)trade.ResultRetcode();
+
+   // Timeout (10012) aaya - order shayad LAG chuka hai bas confirmation late aaya
+   // Retry MAT karo - 2 sec ruk ke check karo ki laga ya nahi
+   if(!ok && rc == 10012)
+   {
+      Print("Timeout aaya - 2s ruk ke check karte hain order laga ya nahi...");
+      Sleep(2000);
+      if(OrderExistsForThisID(comment) || PositionExistsForThisID(comment))
+      {
+         Print("Order laga tha (timeout sirf confirmation me tha) - OK");
+         ok = true;
+      }
+      else
+      {
+         Print("Order sach me nahi laga - user dobara bhej sakta hai");
+      }
+   }
+
+   if(ok)
+   {
+      Print("PLACED: ", symbol, " ", type, " ", lots, " @ ", entry, " SL=", sl, " TP=", tp);
+      SendReply("PLACED " + symbol + " " + type +
+                "\nLots: " + DoubleToString(lots, 2) +
+                "\nEntry: " + DoubleToString(entry, digits) +
+                "\nSL: " + DoubleToString(sl, digits) +
+                "\nTP: " + DoubleToString(tp, digits));
+   }
+   else
+   {
+      Print("FAILED after retries: ", symbol, " retcode=", rc, " - ", trade.ResultRetcodeDescription());
+      SendReply("FAILED " + symbol + " " + type +
+                "\nError " + IntegerToString(rc) + ": " + trade.ResultRetcodeDescription() +
+                (rc == 10012 ? "\n(Timeout - VPS internet ya broker slow hai)" : ""));
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Telegram pe confirmation (ye direction kaam karta hai)            |
+//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+//| Is comment ka pending order pehle se hai?                         |
+//+------------------------------------------------------------------+
+bool OrderExistsForThisID(string comment)
+{
+   int total = OrdersTotal();
+   for(int i = 0; i < total; i++)
+   {
+      ulong ticket = OrderGetTicket(i);
+      if(ticket == 0) continue;
+      if(OrderGetString(ORDER_COMMENT) == comment)
+         return true;
+   }
+   return false;
+}
+
+//+------------------------------------------------------------------+
+//| Is comment ki position pehle se hai?                             |
+//+------------------------------------------------------------------+
+bool PositionExistsForThisID(string comment)
+{
+   int total = PositionsTotal();
+   for(int i = 0; i < total; i++)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket == 0) continue;
+      if(PositionGetString(POSITION_COMMENT) == comment)
+         return true;
+   }
+   return false;
+}
+
+//+------------------------------------------------------------------+
+void SendReply(string text)
+{
+   if(StringLen(TgBotToken) < 10 || StringLen(TgChatID) < 3) return;
+
+   string url = "https://api.telegram.org/bot" + TgBotToken + "/sendMessage";
+   string body = "chat_id=" + TgChatID + "&text=" + UrlEncode("[MT5] " + text);
+
+   char post[], result[];
+   StringToCharArray(body, post, 0, StringLen(body), CP_UTF8);
+   ArrayResize(post, ArraySize(post) - 1);
+
+   string headers = "Content-Type: application/x-www-form-urlencoded\r\n";
+   string resultHeaders;
+   WebRequest("POST", url, headers, 5000, post, result, resultHeaders);
+}
+
+//+------------------------------------------------------------------+
+string UrlEncode(string text)
+{
+   string result = "";
+   int len = StringLen(text);
+   for(int i = 0; i < len; i++)
+   {
+      ushort ch = StringGetCharacter(text, i);
+      if((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') ||
+         (ch >= '0' && ch <= '9') || ch == '-' || ch == '_' || ch == '.')
+         result += ShortToString(ch);
+      else if(ch == ' ')
+         result += "+";
+      else
+         result += StringFormat("%%%02X", ch);
+   }
+   return result;
+}
+//+------------------------------------------------------------------+
