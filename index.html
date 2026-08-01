@@ -1503,6 +1503,93 @@
             return isNaN(ms) ? null : ms;
         }
 
+        // ===== 30 AI Agents Vote (existing indicators se, no extra API) =====
+        function computeAgentVotes(analysis, confluence, quality) {
+            const st = analysis.supertrend === 'BULLISH' ? 1 : -1;
+            const stVote = st > 0 ? 'BUY' : 'SELL';
+            const macdBull = analysis.macd === 'BULLISH CROSS';
+            const rsi = analysis.rsi;
+            const price = analysis.rawPrice, atr = analysis.rawAtr || 0;
+            const ema = analysis.ema200 || 0;
+            const emaDist = (ema > 0 && atr > 0) ? (price - ema) / atr : 0;
+            const atrPct = price > 0 ? atr / price : 0;
+            const bull = confluence.filter(c => c.trend === 'BULLISH').length;
+            const bear = confluence.filter(c => c.trend === 'BEARISH').length;
+            const total = confluence.length || 4;
+            const grade = quality ? quality.grade : null;
+            const revRisk = quality ? quality.reversalRisk : false;
+            const risk = analysis.riskScore || 50;
+            const cry = /BTC|ETH|LTC|XRP|BCH|ADA|SOL|DOGE|LINK/.test((analysis.pair || '').toUpperCase());
+            const volMax = cry ? 0.04 : 0.015;
+            const volHealthy = atrPct >= 0.0005 && atrPct <= volMax;
+            const hourUTC = new Date().getUTCHours();
+            const activeSession = hourUTC >= 7 && hourUTC < 21;
+            const fresh = analysis.trendStart ? ((Date.now() - analysis.trendStart) < 2 * 3600 * 1000) : true;
+            const sig = analysis.signal;
+
+            const A = [];
+            const add = (name, vote, reason) => A.push({ name, vote, reason });
+
+            add('Trend Agent', stVote, 'Supertrend ' + (st > 0 ? 'bullish' : 'bearish'));
+            add('MACD Agent', macdBull ? 'BUY' : 'SELL', macdBull ? 'Bullish cross' : 'Bearish/none');
+            add('Momentum Agent', rsi >= 55 ? 'BUY' : rsi <= 45 ? 'SELL' : 'HOLD', 'RSI ' + Math.round(rsi));
+            add('RSI Zone Agent', (rsi >= 50 && rsi <= 68) ? 'BUY' : (rsi >= 32 && rsi < 50) ? 'SELL' : 'HOLD', 'Trend zone');
+            add('Reversal Agent', rsi >= 70 ? 'SELL' : rsi <= 30 ? 'BUY' : 'HOLD', rsi >= 70 ? 'Overbought' : rsi <= 30 ? 'Oversold' : 'Neutral');
+            add('EMA200 Agent', ema > 0 ? (price > ema ? 'BUY' : 'SELL') : 'HOLD', ema > 0 ? (price > ema ? 'Above EMA200' : 'Below EMA200') : 'No data');
+            add('Mean-Reversion Agent', emaDist > 2.5 ? 'SELL' : emaDist < -2.5 ? 'BUY' : 'HOLD', 'Dist ' + emaDist.toFixed(1) + 'x ATR');
+            add('Overextension Agent', emaDist > 3.5 ? 'SELL' : emaDist < -3.5 ? 'BUY' : 'HOLD', Math.abs(emaDist) > 3.5 ? 'Stretched' : 'OK');
+            add('Volatility Agent', volHealthy ? stVote : 'HOLD', volHealthy ? 'ATR healthy' : 'ATR off');
+            add('Confluence Agent', bull > bear ? 'BUY' : bear > bull ? 'SELL' : 'HOLD', bull + 'up/' + bear + 'down');
+            confluence.forEach((c) => add('TF · ' + (c.label || 'TF'), c.trend === 'BULLISH' ? 'BUY' : c.trend === 'BEARISH' ? 'SELL' : 'HOLD', (c.label || '') + ' ' + (c.trend || 'n/a')));
+            add('Trend-Strength Agent', (bull === total || bear === total) ? stVote : 'HOLD', (bull === total || bear === total) ? 'All aligned' : 'Mixed TF');
+            add('Regime Agent', Math.abs(bull - bear) >= 3 ? stVote : 'HOLD', Math.abs(bull - bear) >= 3 ? 'Trending' : 'Choppy');
+            add('Breakout Agent', (volHealthy && atrPct > volMax * 0.4) ? stVote : 'HOLD', 'Volatility push');
+            add('Momentum-Confirm Agent', (rsi >= 52 && macdBull) ? 'BUY' : (rsi <= 48 && !macdBull) ? 'SELL' : 'HOLD', 'RSI+MACD');
+            add('Trend+MACD Agent', (st > 0 && macdBull) ? 'BUY' : (st < 0 && !macdBull) ? 'SELL' : 'HOLD', 'ST+MACD combo');
+            add('Bollinger Agent', (ema > 0 && price >= ema + 2 * atr) ? 'SELL' : (ema > 0 && price <= ema - 2 * atr) ? 'BUY' : (ema > 0 ? stVote : 'HOLD'), 'Band position');
+            add('VWAP Agent', ema > 0 ? (price > ema ? 'BUY' : 'SELL') : 'HOLD', 'Fair-value (EMA)');
+            add('Session Agent', activeSession ? stVote : 'HOLD', activeSession ? 'London/NY active' : 'Quiet session');
+            add('Freshness Agent', fresh ? stVote : 'HOLD', fresh ? 'Fresh trend' : 'Old trend');
+            add('Risk Agent', risk < 70 ? stVote : 'HOLD', 'Risk ' + Math.round(risk));
+            add('Confidence Agent', grade === 'WEAK' ? 'HOLD' : (sig === 'HOLD' ? 'HOLD' : sig), 'Quality ' + (grade || '-'));
+            add('Reversal-Gate Agent', revRisk ? 'HOLD' : stVote, revRisk ? 'Reversal risk' : 'Clear');
+            add('Range-Position Agent', rsi >= 60 ? 'BUY' : rsi <= 40 ? 'SELL' : 'HOLD', 'RSI band');
+            add('Participation Agent', volHealthy ? stVote : 'HOLD', volHealthy ? 'Active' : 'Thin');
+            add('Pullback Agent', (Math.abs(emaDist) < 1.5 && ema > 0) ? stVote : 'HOLD', Math.abs(emaDist) < 1.5 ? 'Near value' : 'Extended');
+            add('Final AI Agent', sig === 'HOLD' ? 'HOLD' : sig, 'Overall signal');
+
+            let buy = 0, sell = 0, hold = 0;
+            A.forEach(a => { if (a.vote === 'BUY') buy++; else if (a.vote === 'SELL') sell++; else hold++; });
+            const n = A.length;
+            let verdict, vcolor;
+            if (buy >= n * 0.6) { verdict = 'STRONG BUY'; vcolor = '#00FF96'; }
+            else if (sell >= n * 0.6) { verdict = 'STRONG SELL'; vcolor = '#FF5B5B'; }
+            else if (buy > sell && buy >= n * 0.4) { verdict = 'BUY (lean)'; vcolor = '#00FF96'; }
+            else if (sell > buy && sell >= n * 0.4) { verdict = 'SELL (lean)'; vcolor = '#FF5B5B'; }
+            else { verdict = 'NEUTRAL / MIXED'; vcolor = '#FFB800'; }
+            return { agents: A, buy, sell, hold, total: n, verdict, vcolor };
+        }
+        function buildAgentsHTML(av) {
+            const bp = Math.round(av.buy / av.total * 100), sp = Math.round(av.sell / av.total * 100), hp = 100 - bp - sp;
+            const rows = av.agents.map(a => {
+                const col = a.vote === 'BUY' ? '#00FF96' : a.vote === 'SELL' ? '#FF5B5B' : '#FFB800';
+                const bg = a.vote === 'BUY' ? 'rgba(0,255,150,.12)' : a.vote === 'SELL' ? 'rgba(255,68,68,.12)' : 'rgba(255,184,0,.12)';
+                return `<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 9px; border-radius:7px; background:#17161a; margin-bottom:4px;"><div><div style="font-size:11px; font-weight:700; color:#e8e2d5;">${a.name}</div><div style="font-size:8.5px; color:#8a8474;">${a.reason}</div></div><span style="font-size:9px; font-weight:800; padding:2px 9px; border-radius:12px; background:${bg}; color:${col};">${a.vote}</span></div>`;
+            }).join('');
+            return `<div style="background:#111013; border:1px solid rgba(217,182,94,.32); border-radius:12px; padding:14px; margin-bottom:14px;">
+                <div style="text-align:center; font-size:13px; font-weight:800; color:#D9B65E; letter-spacing:1px;">🤖 ${av.total} AI AGENTS · VOTE</div>
+                <div style="text-align:center; font-size:22px; font-weight:900; color:${av.vcolor}; margin:6px 0 2px;">${av.verdict}</div>
+                <div style="text-align:center; font-size:11px; color:#8a8474; margin-bottom:10px;">${av.buy} BUY · ${av.sell} SELL · ${av.hold} HOLD</div>
+                <div style="display:flex; height:12px; border-radius:7px; overflow:hidden; margin-bottom:12px;"><div style="width:${bp}%; background:#00FF96;"></div><div style="width:${sp}%; background:#FF5B5B;"></div><div style="width:${hp}%; background:#FFB800;"></div></div>
+                <div style="display:flex; gap:6px; margin-bottom:6px;">
+                    <div style="flex:1; text-align:center; padding:8px; border-radius:8px; background:rgba(0,255,150,.1); border:1px solid rgba(0,255,150,.3);"><div style="font-size:20px; font-weight:900; color:#00FF96;">${av.buy}</div><div style="font-size:9px; color:#00FF96;">BUY</div></div>
+                    <div style="flex:1; text-align:center; padding:8px; border-radius:8px; background:rgba(255,68,68,.1); border:1px solid rgba(255,68,68,.3);"><div style="font-size:20px; font-weight:900; color:#FF5B5B;">${av.sell}</div><div style="font-size:9px; color:#FF5B5B;">SELL</div></div>
+                    <div style="flex:1; text-align:center; padding:8px; border-radius:8px; background:rgba(255,184,0,.08); border:1px solid rgba(255,184,0,.28);"><div style="font-size:20px; font-weight:900; color:#FFB800;">${av.hold}</div><div style="font-size:9px; color:#FFB800;">HOLD</div></div>
+                </div>
+                <details><summary style="font-size:11px; color:#8a8474; cursor:pointer; padding:6px 0;">▸ Sabhi ${av.total} agents dekho</summary><div style="margin-top:8px; max-height:300px; overflow-y:auto;">${rows}</div></details>
+            </div>`;
+        }
+
         function displayAnalysis(pair, analysis, confluence = [], timestamp = null, fromCache = false) {
             const panel = document.getElementById('analysisPanel');
 
@@ -1529,6 +1616,7 @@
             // Signal quality score
             const q = computeQuality(analysis, confluence);
             window.lastQuality = q;
+            const agentsHTML = buildAgentsHTML(computeAgentVotes(analysis, confluence, q));
             const qualityHTML = analysis.signal === 'HOLD' ? '' : `
                 <div style="background:${q.color}15; border:1px solid ${q.color}66; border-radius:10px; padding:12px 14px; margin-bottom:14px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -1594,6 +1682,8 @@
                 </div>
 
                 ${qualityHTML}
+
+                ${agentsHTML}
 
                 <div style="text-align:center; font-size:11px; color:#888; margin-bottom:6px;">MULTI-TIMEFRAME TREND</div>
                 ${confluenceHTML}
